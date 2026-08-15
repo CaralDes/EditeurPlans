@@ -1,4 +1,4 @@
-import { Group, Rect } from 'react-konva'
+import { Circle, Group } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { COULEUR_ELECTRICITE } from '../lib/couleurs'
@@ -43,14 +43,19 @@ export function Symbole({
       scaleY={scale}
       draggable={draggable}
       listening={listening}
-      onClick={onClick}
-      onTap={onClick}
+      // Sélection sur mousedown/touchstart plutôt que click/tap : ces derniers sont annulés
+      // par Konva dès que la souris bouge un peu entre l'appui et le relâchement (le Group
+      // étant draggable, le moindre tremblement démarre un glissement) — ce qui faisait
+      // échouer la sélection sans prévenir. mousedown fire toujours, avant cette ambiguïté.
+      onMouseDown={onClick}
+      onTouchStart={onClick}
       onDragEnd={(e) => onDragEnd?.(e.target.x(), e.target.y())}
     >
-      {/* Zone de clic invisible : les symboles ne sont que des traits fins sans remplissage,
-          donc sans cette zone, Konva ne détecte le clic/glisser que sur le tracé lui-même
-          (quelques pixels de large) et non sur toute la tuile de l'icône. */}
-      <Rect x={0} y={0} width={48} height={48} fill="transparent" />
+      {/* Zone de clic invisible, plus resserrée que la boîte 48×48 complète : les symboles ne
+          sont que des traits fins sans remplissage, donc sans cette zone Konva ne détecterait
+          le clic que sur le tracé lui-même. Une zone trop large ferait au contraire chevaucher
+          deux organes posés proches l'un de l'autre, et Konva sélectionnerait le mauvais. */}
+      <Circle x={24} y={24} radius={18} fill="transparent" />
       {def.render(color)}
     </Group>
   )
