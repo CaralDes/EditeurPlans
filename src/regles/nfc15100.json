@@ -1,0 +1,60 @@
+{
+  "version": "nfc15100@2026-08",
+  "avertissement": "Base de valeurs de référence compilées depuis des guides professionnels publics (Legrand, Schneider Electric, Promotelec, Hager, Nexans, 123elec, schema-electrique.net, Mon Club Elec). Le texte officiel de la norme NF C 15-100 n'est pas librement consultable. Ces valeurs sont un point de départ à faire valider par un électricien avant exécution — elles ne constituent pas un document de conformité.",
+
+  "equipementParPiece": [
+    { "type": "sejour", "libelle": "Séjour", "prisesMin": 5, "prisesRegle": "1 par tranche de 4 m², min. 5 jusqu'à 28 m², 7 au-delà", "seuilM2": 28, "prisesMinAuDela": 7, "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
+    { "type": "cuisine", "libelle": "Cuisine", "prisesMin": 6, "prisesRegle": "dont 4 au-dessus du plan de travail ; 3 si surface ≤ 4 m²", "seuilM2": 4, "prisesMinSousSeuil": 3, "eclairageMin": 1, "source": "Legrand — norme cuisine NF C 15-100" },
+    { "type": "chambre", "libelle": "Chambre", "prisesMin": 3, "prisesRegle": "réparties + 1 à proximité de la commande d'éclairage", "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
+    { "type": "salle-de-bain", "libelle": "Salle de bains", "prisesMin": 1, "prisesRegle": "hors volumes 0 et 1 ; liaison équipotentielle locale obligatoire", "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
+    { "type": "circulation", "libelle": "Circulation / entrée", "prisesMin": 1, "prisesRegle": "toute pièce ou dégagement > 4 m²", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
+    { "type": "cellier", "libelle": "Cellier", "prisesMin": 0, "prisesRegle": "non exigé, recommandé", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
+    { "type": "garage", "libelle": "Garage", "prisesMin": 0, "prisesRegle": "non exigé si non attenant", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
+    { "type": "wc", "libelle": "WC", "prisesMin": 0, "prisesRegle": "non exigé", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
+    { "type": "exterieur", "libelle": "Extérieur", "prisesMin": 0, "prisesRegle": "1 point d'éclairage par accès", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" }
+  ],
+
+  "circuits": [
+    { "id": "prises-16A-2.5", "libelle": "Prises 16 A (2,5 mm²)", "famille": "prises", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 12, "source": "Mon Club Elec — nombre de prises par circuit" },
+    { "id": "prises-16A-1.5", "libelle": "Prises 16 A (1,5 mm²)", "famille": "prises", "sectionMm2": 1.5, "calibreA": 16, "maxOrganes": 8, "source": "Mon Club Elec — nombre de prises par circuit" },
+    { "id": "prises-cuisine", "libelle": "Prises cuisine (circuit dédié)", "famille": "prises-cuisine", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 6, "note": "aucune autre prise sur ce circuit", "source": "Legrand — norme cuisine NF C 15-100" },
+    { "id": "eclairage", "libelle": "Éclairage", "famille": "eclairage", "sectionMm2": 1.5, "calibreA": 16, "maxOrganes": 8, "note": "règle des 300 VA pour spots/bandeaux : 1 point par tranche de 300 VA", "source": "123elec — norme éclairage" },
+    { "id": "plaque-cuisson", "libelle": "Plaque de cuisson", "famille": "specialise", "sectionMm2": 6, "calibreA": 32, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "four", "libelle": "Four", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "lave-vaisselle", "libelle": "Lave-vaisselle", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "lave-linge", "libelle": "Lave-linge", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "seche-linge", "libelle": "Sèche-linge", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "refrigerateur-congelateur", "libelle": "Réfrigérateur / congélateur", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "note": "circuit dédié recommandé pour éviter les coupures groupées", "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "chauffe-eau", "libelle": "Chauffe-eau", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "vmc", "libelle": "VMC", "famille": "vmc", "sectionMm2": 1.5, "calibreA": 2, "maxOrganes": 1, "note": "calibre 2 A, parfois posé sur circuit dédié 16A selon groupe", "source": "Promotelec — brochure NF C 15-100" },
+    { "id": "volets-roulants", "libelle": "Volets roulants", "famille": "volets", "sectionMm2": 1.5, "calibreA": 16, "maxOrganes": 8, "note": "répartir sur 2 circuits si possible pour la sécurité", "source": "Legrand — volets par disjoncteur" },
+    { "id": "chauffage-16A", "libelle": "Chauffage électrique (16 A)", "famille": "chauffage", "sectionMm2": 1.5, "calibreA": 16, "puissanceMaxW": 3000, "note": "jusqu'à 4 convecteurs de 750 W", "source": "Nexans — circuits de chauffage NF C 15-100" },
+    { "id": "chauffage-20A", "libelle": "Chauffage électrique (20 A)", "famille": "chauffage", "sectionMm2": 2.5, "calibreA": 20, "puissanceMaxW": 4500, "source": "Nexans — circuits de chauffage NF C 15-100" },
+    { "id": "communication", "libelle": "Coffret communication", "famille": "communication", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 2, "source": "Legrand — norme prises de courant" }
+  ],
+
+  "hauteursPose": [
+    { "pose": "basse", "hauteurM": 0.05, "regle": "≥ 5 cm, axe des alvéoles au-dessus du sol fini", "source": "guide-artisans.com — hauteur interrupteurs et prises" },
+    { "pose": "plan-travail", "hauteurM": 1.10, "regle": "≥ 8 cm au-dessus du plan de travail, jamais au-dessus de l'évier ni des feux", "source": "IZI by EDF — norme cuisine" },
+    { "pose": "haute", "hauteurM": 1.30, "regle": "prise 32 A ≥ 12 cm au-dessus du sol fini", "source": "schema-electrique.net — norme prise électrique" },
+    { "pose": "hotte", "hauteurM": 1.80, "regle": "≥ 1,80 m, au-dessus des plaques", "source": "Legrand — norme cuisine" },
+    { "pose": "commande", "hauteurM": 1.10, "regle": "interrupteurs et commandes entre 0,90 et 1,30 m", "source": "guide-artisans.com — hauteur interrupteurs et prises" },
+    { "pose": "plafond", "hauteurM": null, "regle": "point lumineux, sous plafond", "source": "—" }
+  ],
+
+  "tableau": {
+    "reserveModulesMin": 0.20,
+    "differentielsMin": 2,
+    "differentielsCalibre30mA": true,
+    "typeAImposePour": ["plaque-cuisson", "lave-linge", "irve"],
+    "etel": { "largeurMm": 600, "profondeurMinMm": 250, "hauteurPoigneesMinM": 0.90, "hauteurPoigneesMaxM": 1.80 },
+    "distances": { "gazCm": 10, "sourceChaleurCm": 40, "pointEauCm": 60 },
+    "source": "Promotelec — brochure NF C 15-100"
+  },
+
+  "chuteDeTensionMax": {
+    "eclairage": 0.03,
+    "prises": 0.05,
+    "source": "e-comptoirelectrique — calcul de la chute de tension"
+  }
+}

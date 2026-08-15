@@ -1,0 +1,338 @@
+:root {
+  --paper: #eef1f4;
+  --card: #ffffff;
+  --sunk: #e2e7eb;
+  --ink: #16222c;
+  --ink-2: #52677a;
+  --ink-3: #8496a6;
+  --rule: #d3dbe2;
+  --accent: #9a5f26;
+  --accent-2: #b8813f;
+  --danger: #b1402f;
+  --radius: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #10161c;
+    --card: #182129;
+    --sunk: #0d1318;
+    --ink: #e4ebf1;
+    --ink-2: #93a5b5;
+    --ink-3: #5e7386;
+    --rule: #263340;
+    --accent: #d0904e;
+    --accent-2: #b4783c;
+    --danger: #d4705f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- barre d'outils ---------- */
+.barre-outils {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+
+.barre-groupe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.champ-nom {
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  min-width: 160px;
+}
+.champ-nom:hover,
+.champ-nom:focus {
+  background: var(--sunk);
+  outline: none;
+}
+
+.champ-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.champ-inline input {
+  width: 64px;
+}
+
+.btn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border: 1px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--accent-2);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.btn.actif {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-lien {
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  margin-left: 10px;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 6px 8px;
+}
+
+/* ---------- corps ---------- */
+.app-corps {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  min-height: 0;
+}
+
+.app-palette {
+  border-right: 1px solid var(--rule);
+  background: var(--card);
+  overflow-y: auto;
+}
+
+.app-canevas {
+  position: relative;
+  min-width: 0;
+}
+
+.app-panneau {
+  border-left: 1px solid var(--rule);
+  background: var(--card);
+  overflow-y: auto;
+}
+
+/* ---------- palette ---------- */
+.palette-groupe {
+  border-bottom: 1px solid var(--rule);
+}
+.palette-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+.palette-grille {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  padding: 0 6px 8px;
+}
+.palette-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 2px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.palette-item:hover {
+  background: var(--sunk);
+}
+.palette-item.actif {
+  background: var(--sunk);
+  border-color: var(--accent);
+}
+.palette-item span {
+  font-size: 9.5px;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* ---------- panneau propriétés ---------- */
+.panneau-proprietes {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.panneau-vide {
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.panneau-proprietes h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.panneau-repere {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: -8px;
+}
+.panneau-note {
+  margin: -6px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  line-height: 1.4;
+}
+.champ-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.champ-rotation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.champ-rotation span {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 700;
+  min-width: 34px;
+  text-align: center;
+}
+.panneau-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ---------- overlay canevas ---------- */
+.hud-bas-gauche {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  font-family: ui-monospace, monospace;
+}
+
+.hud-instruction {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- dialogue calibration ---------- */
+.dialogue-fond {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 20, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.dialogue {
+  background: var(--card);
+  border-radius: 6px;
+  padding: 22px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.dialogue h3 {
+  margin: 0;
+}
+.dialogue-note {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.dialogue-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
