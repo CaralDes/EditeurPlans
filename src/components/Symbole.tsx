@@ -1,6 +1,7 @@
 import { Group } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { SYMBOL_DEFS } from '../symbols/definitions'
+import { COULEUR_ELECTRICITE } from '../lib/couleurs'
 import type { TypeOrgane } from '../types'
 
 interface SymboleProps {
@@ -24,7 +25,7 @@ export function Symbole({
   y,
   rotation = 0,
   scale = 1,
-  color = '#1d2b38',
+  color = COULEUR_ELECTRICITE,
   onClick,
   onDragEnd,
   draggable = false,

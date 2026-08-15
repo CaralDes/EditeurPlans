@@ -6,6 +6,7 @@ import { useProjectStore } from '../store/useProjectStore'
 import { useHtmlImage } from '../lib/useHtmlImage'
 import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
+import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_SELECTION } from '../lib/couleurs'
 import type { ModeCheminement, Point, TypeOrgane } from '../types'
 
 const ZOOM_MIN = 0.15
@@ -179,7 +180,7 @@ export function PlanCanvas() {
             <Line
               key={c.id}
               points={aplatir(c.points)}
-              stroke="#9a5f26"
+              stroke={COULEUR_ELECTRICITE}
               strokeWidth={2 / vue.scale}
               dash={c.mode === 'plafond' ? undefined : [6 / vue.scale, 4 / vue.scale]}
               lineCap="round"
@@ -192,7 +193,7 @@ export function PlanCanvas() {
             <>
               <Line
                 points={aplatir(pointsCableEnCours)}
-                stroke="#c94f3a"
+                stroke={COULEUR_CABLE_EN_COURS}
                 strokeWidth={2 / vue.scale}
                 dash={[5 / vue.scale, 3 / vue.scale]}
                 lineCap="round"
@@ -200,13 +201,13 @@ export function PlanCanvas() {
                 listening={false}
               />
               {pointsCableEnCours.map((p, i) => (
-                <Circle key={i} x={p.x} y={p.y} radius={4 / vue.scale} fill="#c94f3a" listening={false} />
+                <Circle key={i} x={p.x} y={p.y} radius={4 / vue.scale} fill={COULEUR_CABLE_EN_COURS} listening={false} />
               ))}
             </>
           )}
 
           {pointCalibration && (
-            <Circle x={pointCalibration.x} y={pointCalibration.y} radius={5 / vue.scale} fill="#c94f3a" />
+            <Circle x={pointCalibration.x} y={pointCalibration.y} radius={5 / vue.scale} fill={COULEUR_CABLE_EN_COURS} />
           )}
 
           {projet.organes
@@ -311,7 +312,7 @@ function SymboleOrgane({
           x={x}
           y={y}
           radius={20}
-          stroke="#9a5f26"
+          stroke={COULEUR_SELECTION}
           strokeWidth={1.5 / echelleVue}
           dash={[4 / echelleVue, 3 / echelleVue]}
           listening={false}
@@ -322,7 +323,7 @@ function SymboleOrgane({
         x={x}
         y={y}
         rotation={rotation}
-        color={selectionne ? '#9a5f26' : '#1d2b38'}
+        color={selectionne ? COULEUR_SELECTION : COULEUR_ELECTRICITE}
         draggable={draggable}
         onClick={onClick}
         onDragEnd={onDeplacer}

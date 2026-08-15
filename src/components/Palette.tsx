@@ -2,6 +2,7 @@ import { CALQUES_ORDRE, CALQUE_LABELS, SYMBOL_DEFS } from '../symbols/definition
 import type { TypeOrgane } from '../types'
 import { useProjectStore } from '../store/useProjectStore'
 import { SymbolePreview } from './SymbolePreview'
+import { COULEUR_ELECTRICITE, COULEUR_ELECTRICITE_SUR_ACCENT } from '../lib/couleurs'
 
 // Le tableau principal et le tableau divisionnaire ne se posent plus comme des organes
 // génériques : ce sont de vraies entités Tableau (avec différentiels), posées depuis le
@@ -46,7 +47,7 @@ export function Palette() {
                   title={SYMBOL_DEFS[type].label}
                 >
                   <span className="icone-chip">
-                    <SymbolePreview type={type} color={actif ? '#ffffff' : '#16222c'} />
+                    <SymbolePreview type={type} color={actif ? COULEUR_ELECTRICITE_SUR_ACCENT : COULEUR_ELECTRICITE} />
                   </span>
                   <span>{SYMBOL_DEFS[type].label}</span>
                 </button>

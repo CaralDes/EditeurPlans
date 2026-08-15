@@ -1,10 +1,11 @@
 import { Layer, Stage } from 'react-konva'
 import { Symbole } from './Symbole'
+import { COULEUR_ELECTRICITE } from '../lib/couleurs'
 import type { TypeOrgane } from '../types'
 
 const TAILLE = 56
 
-export function SymbolePreview({ type, color = '#16222c' }: { type: TypeOrgane; color?: string }) {
+export function SymbolePreview({ type, color = COULEUR_ELECTRICITE }: { type: TypeOrgane; color?: string }) {
   return (
     <Stage width={TAILLE} height={TAILLE} listening={false}>
       <Layer>
