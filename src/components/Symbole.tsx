@@ -1,4 +1,4 @@
-import { Group } from 'react-konva'
+import { Group, Rect } from 'react-konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { COULEUR_ELECTRICITE } from '../lib/couleurs'
@@ -47,6 +47,10 @@ export function Symbole({
       onTap={onClick}
       onDragEnd={(e) => onDragEnd?.(e.target.x(), e.target.y())}
     >
+      {/* Zone de clic invisible : les symboles ne sont que des traits fins sans remplissage,
+          donc sans cette zone, Konva ne détecte le clic/glisser que sur le tracé lui-même
+          (quelques pixels de large) et non sur toute la tuile de l'icône. */}
+      <Rect x={0} y={0} width={48} height={48} fill="transparent" />
       {def.render(color)}
     </Group>
   )

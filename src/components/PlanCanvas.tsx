@@ -308,15 +308,18 @@ function SymboleOrgane({
   return (
     <>
       {selectionne && (
-        <Circle
-          x={x}
-          y={y}
-          radius={20}
-          stroke={COULEUR_SELECTION}
-          strokeWidth={1.5 / echelleVue}
-          dash={[4 / echelleVue, 3 / echelleVue]}
-          listening={false}
-        />
+        <>
+          <Circle x={x} y={y} radius={22} fill={COULEUR_SELECTION} opacity={0.18} listening={false} />
+          <Circle
+            x={x}
+            y={y}
+            radius={22}
+            stroke={COULEUR_SELECTION}
+            strokeWidth={2 / echelleVue}
+            dash={[4 / echelleVue, 3 / echelleVue]}
+            listening={false}
+          />
+        </>
       )}
       <Symbole
         type={type}
