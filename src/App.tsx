@@ -1,16 +1,24 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BarreOutils } from './components/BarreOutils'
 import { Palette } from './components/Palette'
 import { PlanCanvas } from './components/PlanCanvas'
 import { PanneauProprietes } from './components/PanneauProprietes'
+import { PanneauCircuits } from './components/PanneauCircuits'
 import { DialogueEchelle } from './components/DialogueEchelle'
 import { useProjectStore } from './store/useProjectStore'
+import { useAutosave } from './lib/useAutosave'
+
+type Onglet = 'proprietes' | 'circuits'
 
 export default function App() {
+  useAutosave()
+  const [onglet, setOnglet] = useState<Onglet>('proprietes')
   const selection = useProjectStore((s) => s.selection)
+  const outil = useProjectStore((s) => s.outil)
   const supprimerOrganes = useProjectStore((s) => s.supprimerOrganes)
   const dupliquerOrganes = useProjectStore((s) => s.dupliquerOrganes)
   const setOutil = useProjectStore((s) => s.setOutil)
+  const finaliserCable = useProjectStore((s) => s.finaliserCable)
   const undo = useProjectStore((s) => s.undo)
   const redo = useProjectStore((s) => s.redo)
 
@@ -20,6 +28,7 @@ export default function App() {
       if (cible.tagName === 'INPUT' || cible.tagName === 'TEXTAREA' || cible.tagName === 'SELECT') return
 
       if (e.key === 'Escape') setOutil({ kind: 'select' })
+      else if (e.key === 'Enter' && outil.kind === 'cable') finaliserCable()
       else if ((e.key === 'Delete' || e.key === 'Backspace') && selection.length > 0) supprimerOrganes(selection)
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selection.length > 0) {
         e.preventDefault()
@@ -32,7 +41,7 @@ export default function App() {
     }
     window.addEventListener('keydown', surTouche)
     return () => window.removeEventListener('keydown', surTouche)
-  }, [selection, supprimerOrganes, dupliquerOrganes, setOutil, undo, redo])
+  }, [selection, outil, supprimerOrganes, dupliquerOrganes, setOutil, finaliserCable, undo, redo])
 
   return (
     <div className="app">
@@ -45,7 +54,15 @@ export default function App() {
           <PlanCanvas />
         </main>
         <aside className="app-panneau">
-          <PanneauProprietes />
+          <div className="onglets">
+            <button className={`onglet${onglet === 'proprietes' ? ' actif' : ''}`} onClick={() => setOnglet('proprietes')}>
+              Propriétés
+            </button>
+            <button className={`onglet${onglet === 'circuits' ? ' actif' : ''}`} onClick={() => setOnglet('circuits')}>
+              Circuits & câblage
+            </button>
+          </div>
+          {onglet === 'proprietes' ? <PanneauProprietes /> : <PanneauCircuits />}
         </aside>
       </div>
       <DialogueEchelle />

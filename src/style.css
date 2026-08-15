@@ -1,30 +1,20 @@
+/* Principe de l'interface : toujours un mode clair, quel que soit le thème du système
+   d'exploitation — pas de bascule sombre. Les couleurs restent volontairement à fort
+   contraste (texte, bordures, icônes) pour rester lisibles en continu, plan de travail
+   à l'écran ou imprimé. */
 :root {
   --paper: #eef1f4;
   --card: #ffffff;
   --sunk: #e2e7eb;
+  --chip: #f4f6f8;
   --ink: #16222c;
-  --ink-2: #52677a;
-  --ink-3: #8496a6;
+  --ink-2: #46596b;
+  --ink-3: #64798c;
   --rule: #d3dbe2;
   --accent: #9a5f26;
   --accent-2: #b8813f;
   --danger: #b1402f;
   --radius: 4px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #10161c;
-    --card: #182129;
-    --sunk: #0d1318;
-    --ink: #e4ebf1;
-    --ink-2: #93a5b5;
-    --ink-3: #5e7386;
-    --rule: #263340;
-    --accent: #d0904e;
-    --accent-2: #b4783c;
-    --danger: #d4705f;
-  }
 }
 
 * {
@@ -127,6 +117,11 @@ body {
   color: var(--danger);
   border-color: var(--danger);
 }
+.barre-erreur {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 600;
+}
 .btn-lien {
   background: none;
   border: none;
@@ -172,6 +167,33 @@ textarea {
   border-left: 1px solid var(--rule);
   background: var(--card);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.onglets {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+  flex: none;
+}
+.onglets .onglet {
+  flex: 1;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 11px 6px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.onglets .onglet:hover {
+  color: var(--ink);
+}
+.onglets .onglet.actif {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* ---------- palette ---------- */
@@ -192,32 +214,47 @@ textarea {
 .palette-grille {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 2px;
-  padding: 0 6px 8px;
+  gap: 6px;
+  padding: 2px 8px 12px;
 }
 .palette-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 6px 2px 8px;
+  gap: 5px;
+  padding: 0;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
+  border: none;
   cursor: pointer;
 }
-.palette-item:hover {
-  background: var(--sunk);
+.icone-chip {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chip);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
 }
-.palette-item.actif {
-  background: var(--sunk);
+.palette-item:hover .icone-chip {
+  background: var(--card);
+  border-color: var(--accent-2);
+}
+.palette-item.actif .icone-chip {
+  background: var(--accent);
   border-color: var(--accent);
 }
 .palette-item span {
-  font-size: 9.5px;
+  font-size: 10.5px;
+  font-weight: 500;
   color: var(--ink-2);
   text-align: center;
   line-height: 1.25;
+}
+.palette-item.actif span {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 /* ---------- panneau propriétés ---------- */
@@ -300,6 +337,12 @@ textarea {
   font-size: 12.5px;
   display: flex;
   align-items: center;
+  gap: 4px;
+}
+.hud-select {
+  font-size: 12px;
+  padding: 3px 6px;
+  margin: 0 2px;
 }
 
 /* ---------- dialogue calibration ---------- */
@@ -335,4 +378,156 @@ textarea {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 6px;
+}
+
+/* ---------- panneau circuits & câblage ---------- */
+.panneau-circuits {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.panneau-circuits h4 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.panneau-circuits section p {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.carte-tableau {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  background: var(--chip);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.carte-tableau b {
+  font-size: 13.5px;
+}
+
+.nouveau-circuit {
+  padding: 12px;
+  background: var(--chip);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.nouveau-circuit p:first-child {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.liste-circuits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.carte-circuit {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 12px;
+}
+.carte-circuit-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.carte-circuit-entete b {
+  font-size: 13.5px;
+}
+.carte-circuit-specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.tag-spec {
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--sunk);
+  border-radius: 3px;
+  padding: 2px 7px;
+}
+.panneau-alerte {
+  font-size: 12px;
+  color: var(--danger);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.liste-organes-circuit {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.liste-organes-circuit li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.liste-organes-circuit li:last-child {
+  border-bottom: none;
+}
+.liste-organes-circuit li > span:first-child {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 52px;
+}
+.liste-organes-circuit .btn-lien {
+  margin-left: 0;
+  font-size: 11.5px;
+}
+.liste-organes-circuit .btn-lien.actif {
+  color: var(--accent);
+  font-weight: 700;
+}
+.badge-ok {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #2f7a3d;
+  background: #e3f3e6;
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.table-metre {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.table-metre th,
+.table-metre td {
+  text-align: left;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--rule);
+}
+.table-metre th {
+  color: var(--ink-3);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.table-metre td:last-child,
+.table-metre th:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }

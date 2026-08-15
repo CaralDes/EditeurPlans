@@ -1,12 +1,16 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useProjectStore } from '../store/useProjectStore'
+import { FichierProjetInvalide, analyser, declencherTelechargement, lireFichier, nomFichier, serialiser } from '../lib/fichierProjet'
 
 export function BarreOutils() {
   const inputRef = useRef<HTMLInputElement>(null)
+  const inputProjetRef = useRef<HTMLInputElement>(null)
+  const [erreurOuverture, setErreurOuverture] = useState<string | null>(null)
   const projet = useProjectStore((s) => s.projet)
   const outil = useProjectStore((s) => s.outil)
   const setOutil = useProjectStore((s) => s.setOutil)
   const chargerPlan = useProjectStore((s) => s.chargerPlan)
+  const chargerProjet = useProjectStore((s) => s.chargerProjet)
   const setNomProjet = useProjectStore((s) => s.setNomProjet)
   const setHauteurSousPlafond = useProjectStore((s) => s.setHauteurSousPlafond)
   const undo = useProjectStore((s) => s.undo)
@@ -25,6 +29,28 @@ export function BarreOutils() {
     e.target.value = ''
   }
 
+  function surEnregistrer() {
+    declencherTelechargement(serialiser(projet), nomFichier(projet))
+  }
+
+  async function surOuvrir(e: React.ChangeEvent<HTMLInputElement>) {
+    const fichier = e.target.files?.[0]
+    e.target.value = ''
+    if (!fichier) return
+    const aDuContenu = projet.organes.length > 0 || Boolean(projet.plan.image)
+    if (aDuContenu && !window.confirm('Remplacer le projet actuel par ce fichier ? Le travail non enregistré sera perdu.')) {
+      return
+    }
+    try {
+      const texte = await lireFichier(fichier)
+      const projetOuvert = analyser(texte)
+      chargerProjet(projetOuvert)
+      setErreurOuverture(null)
+    } catch (err) {
+      setErreurOuverture(err instanceof FichierProjetInvalide ? err.message : "Impossible d'ouvrir ce fichier.")
+    }
+  }
+
   return (
     <div className="barre-outils">
       <div className="barre-groupe">
@@ -34,6 +60,17 @@ export function BarreOutils() {
           onChange={(e) => setNomProjet(e.target.value)}
           aria-label="Nom du projet"
         />
+      </div>
+
+      <div className="barre-groupe">
+        <button className="btn" onClick={surEnregistrer} title="Télécharger le projet (.cuivre)">
+          Enregistrer
+        </button>
+        <button className="btn" onClick={() => inputProjetRef.current?.click()} title="Ouvrir un fichier .cuivre">
+          Ouvrir…
+        </button>
+        <input ref={inputProjetRef} type="file" accept=".cuivre,application/json" hidden onChange={surOuvrir} />
+        {erreurOuverture && <span className="barre-erreur">{erreurOuverture}</span>}
       </div>
 
       <div className="barre-groupe">

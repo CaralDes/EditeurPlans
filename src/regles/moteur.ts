@@ -38,7 +38,7 @@ const REGLES = regles as {
   equipementParPiece: EquipementPiece[]
   circuits: CircuitDef[]
   hauteursPose: HauteurPoseDef[]
-  tableau: Record<string, unknown>
+  tableau: { differentielsMin: number; typeAImposePour: string[]; [cle: string]: unknown }
   chuteDeTensionMax: { eclairage: number; prises: number; source: string }
 }
 
@@ -60,6 +60,16 @@ export function circuitDef(id: string): CircuitDef | undefined {
 
 export function hauteurRecommandee(pose: PoseHauteur): HauteurPoseDef | undefined {
   return hauteursParPose.get(pose)
+}
+
+// Différentiel 30 mA de type A imposé pour certains circuits (plaque, lave-linge, IRVE...) ;
+// type AC accepté partout ailleurs. Voir nfc15100.json → tableau.typeAImposePour.
+export function typeDifferentielRequis(circuitDefId: string): 'A' | 'AC' {
+  return REGLES.tableau.typeAImposePour.includes(circuitDefId) ? 'A' : 'AC'
+}
+
+export function differentielsMinimum(): number {
+  return REGLES.tableau.differentielsMin
 }
 
 export const PRISES_TYPES = new Set([

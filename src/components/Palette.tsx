@@ -3,9 +3,15 @@ import type { TypeOrgane } from '../types'
 import { useProjectStore } from '../store/useProjectStore'
 import { SymbolePreview } from './SymbolePreview'
 
+// Le tableau principal et le tableau divisionnaire ne se posent plus comme des organes
+// génériques : ce sont de vraies entités Tableau (avec différentiels), posées depuis le
+// panneau Circuits & câblage, pour pouvoir servir de point d'arrivée aux câbles.
+const NON_POSABLES_DEPUIS_PALETTE = new Set<TypeOrgane>(['tableau-principal', 'tableau-divisionnaire'])
+
 const TYPES_PAR_CALQUE = (() => {
   const map = new Map<string, TypeOrgane[]>()
   for (const [type, def] of Object.entries(SYMBOL_DEFS) as [TypeOrgane, (typeof SYMBOL_DEFS)[TypeOrgane]][]) {
+    if (NON_POSABLES_DEPUIS_PALETTE.has(type)) continue
     const liste = map.get(def.calque) ?? []
     liste.push(type)
     map.set(def.calque, liste)
@@ -39,7 +45,9 @@ export function Palette() {
                   onClick={() => setOutil(actif ? { kind: 'select' } : { kind: 'poser', type })}
                   title={SYMBOL_DEFS[type].label}
                 >
-                  <SymbolePreview type={type} color={actif ? '#9a5f26' : '#1d2b38'} />
+                  <span className="icone-chip">
+                    <SymbolePreview type={type} color={actif ? '#ffffff' : '#16222c'} />
+                  </span>
                   <span>{SYMBOL_DEFS[type].label}</span>
                 </button>
               )

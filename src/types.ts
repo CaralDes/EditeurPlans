@@ -113,6 +113,7 @@ export interface Circuit {
   id: string
   libelle: string
   famille: FamilleCircuit
+  regleId: string | null // identifiant de la règle nfc15100.json d'origine, si suggérée automatiquement
   sectionMm2: number
   calibreA: number
   ddrId: string | null
