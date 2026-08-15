@@ -6,7 +6,8 @@ import type { PoseHauteur } from '../types'
 const POSES: { valeur: PoseHauteur; label: string }[] = [
   { valeur: 'basse', label: 'Basse (prise standard)' },
   { valeur: 'plan-travail', label: 'Plan de travail' },
-  { valeur: 'haute', label: 'Haute (32 A)' },
+  { valeur: 'cuisson', label: 'Cuisson (plaque, 32 A)' },
+  { valeur: 'haute', label: 'Haute murale (appareil)' },
   { valeur: 'hotte', label: 'Hotte' },
   { valeur: 'commande', label: 'Commande (inter.)' },
   { valeur: 'plafond', label: 'Plafond' },

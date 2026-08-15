@@ -127,17 +127,9 @@ export function PlanCanvas() {
             <Circle x={pointCalibration.x} y={pointCalibration.y} radius={5 / vue.scale} fill="#c94f3a" />
           )}
 
-          {calquesVisibles.distribution &&
-            projet.tableaux.map((t) => (
-              <Symbole
-                key={t.id}
-                type={t.type === 'principal' ? 'tableau-principal' : 'tableau-divisionnaire'}
-                x={t.x}
-                y={t.y}
-                scale={1.1}
-                color={selection.includes(t.id) ? '#9a5f26' : '#1d2b38'}
-              />
-            ))}
+          {/* Note lot 05 : le tableau électrique divisionnaire (Tableau/Differentiel) sera un objet
+              dédié avec sa propre gestion des circuits. En attendant, il se pose comme un organe
+              normal ('tableau-principal' / 'tableau-divisionnaire') via la palette ci-dessous. */}
 
           {projet.organes
             .filter((o) => calquesVisibles[SYMBOL_DEFS[o.type].calque])

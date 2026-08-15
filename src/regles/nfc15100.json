@@ -36,7 +36,8 @@
   "hauteursPose": [
     { "pose": "basse", "hauteurM": 0.05, "regle": "≥ 5 cm, axe des alvéoles au-dessus du sol fini", "source": "guide-artisans.com — hauteur interrupteurs et prises" },
     { "pose": "plan-travail", "hauteurM": 1.10, "regle": "≥ 8 cm au-dessus du plan de travail, jamais au-dessus de l'évier ni des feux", "source": "IZI by EDF — norme cuisine" },
-    { "pose": "haute", "hauteurM": 1.30, "regle": "prise 32 A ≥ 12 cm au-dessus du sol fini", "source": "schema-electrique.net — norme prise électrique" },
+    { "pose": "cuisson", "hauteurM": 0.12, "regle": "prise ou boîte 32 A ≥ 12 cm au-dessus du sol fini, derrière la cuisinière", "source": "schema-electrique.net — norme prise électrique" },
+    { "pose": "haute", "hauteurM": 1.30, "regle": "pose haute murale (chauffe-eau, volet, sèche-serviette…) : hauteur usuelle 1,10–1,80 m selon l'appareil, à ajuster au cas par cas — aucune valeur unique n'est imposée par la norme", "source": "convention d'installation, non normée" },
     { "pose": "hotte", "hauteurM": 1.80, "regle": "≥ 1,80 m, au-dessus des plaques", "source": "Legrand — norme cuisine" },
     { "pose": "commande", "hauteurM": 1.10, "regle": "interrupteurs et commandes entre 0,90 et 1,30 m", "source": "guide-artisans.com — hauteur interrupteurs et prises" },
     { "pose": "plafond", "hauteurM": null, "regle": "point lumineux, sous plafond", "source": "—" }

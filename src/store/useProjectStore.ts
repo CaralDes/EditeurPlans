@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import { SYMBOL_DEFS, type Calque, CALQUES_ORDRE } from '../symbols/definitions'
+import { SYMBOL_META, type Calque, CALQUES_ORDRE } from '../symbols/meta'
 import { prochainRepere } from '../lib/reperes'
 import { calculerEchelle } from '../lib/echelle'
+import { hauteurRecommandee } from '../regles/moteur'
 import { projetVide, type Organe, type Point, type Projet, type TypeOrgane } from '../types'
 
 export type Outil = { kind: 'select' } | { kind: 'calibrer' } | { kind: 'poser'; type: TypeOrgane }
@@ -101,7 +102,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   ajouterOrgane: (type, x, y) => {
     const p = get().projet
-    const def = SYMBOL_DEFS[type]
+    const def = SYMBOL_META[type]
     const id = `${type}-${Date.now()}-${Math.round(Math.random() * 1000)}`
     const organe: Organe = {
       id,
@@ -110,7 +111,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       x,
       y,
       rotation: 0,
-      hauteurM: 0,
+      hauteurM: hauteurRecommandee(def.poseDefaut)?.hauteurM ?? 0,
       pose: def.poseDefaut,
       postes: 1,
       ip: null,

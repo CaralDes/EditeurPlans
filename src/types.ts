@@ -2,7 +2,7 @@
 // Un seul document JSON (le fichier .cuivre), rien de dérivé n'est stocké :
 // surfaces, longueurs de câble et conformité sont recalculées depuis ces données.
 
-export type PoseHauteur = 'basse' | 'plan-travail' | 'haute' | 'hotte' | 'plafond' | 'commande'
+export type PoseHauteur = 'basse' | 'plan-travail' | 'cuisson' | 'haute' | 'hotte' | 'plafond' | 'commande'
 
 export type TypeOrgane =
   // prises
