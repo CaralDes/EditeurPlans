@@ -1,12 +1,13 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { Circle, Image as KonvaImage, Layer, Line, Stage } from 'react-konva'
+import { Circle, Group, Image as KonvaImage, Layer, Line, Stage } from 'react-konva'
 import { useProjectStore } from '../store/useProjectStore'
 import { useHtmlImage } from '../lib/useHtmlImage'
 import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_SELECTION } from '../lib/couleurs'
+import { cibleLaPlusProche, type Cible } from '../lib/cibles'
 import type { ModeCheminement, Point, TypeOrgane } from '../types'
 
 const ZOOM_MIN = 0.15
@@ -36,6 +37,12 @@ export function PlanCanvas() {
   const conteneurRef = useRef<HTMLDivElement | null>(null)
   const [taille, setTaille] = useState({ w: 800, h: 600 })
   const [vue, setVue] = useState({ scale: 1, x: 0, y: 0 })
+  const [survole, setSurvole] = useState<string | null>(null)
+
+  // Déplacement en cours. Conservé dans une ref et appliqué directement au nœud Konva :
+  // passer par l'état React à chaque mouvement de souris re-rendrait tout le calque, et
+  // écrire dans le store créerait une entrée d'historique par pixel parcouru.
+  const glisseRef = useRef<{ id: string; estTableau: boolean; decalage: Point; aBouge: boolean } | null>(null)
 
   const projet = useProjectStore((s) => s.projet)
   const outil = useProjectStore((s) => s.outil)
@@ -57,6 +64,26 @@ export function PlanCanvas() {
   const annulerCable = useProjectStore((s) => s.annulerCable)
 
   const image = useHtmlImage(projet.plan.image)
+
+  const organesVisibles = useMemo(
+    () => projet.organes.filter((o) => calquesVisibles[SYMBOL_DEFS[o.type].calque]),
+    [projet.organes, calquesVisibles],
+  )
+  const tableauxVisibles = useMemo(
+    () => (calquesVisibles.distribution ? projet.tableaux : []),
+    [projet.tableaux, calquesVisibles.distribution],
+  )
+
+  // Tout ce qui peut être sélectionné ou déplacé sur le plan, réduit à sa position.
+  const cibles = useMemo<Cible[]>(
+    () => [
+      ...organesVisibles.map((o) => ({ id: o.id, x: o.x, y: o.y })),
+      ...tableauxVisibles.map((t) => ({ id: t.id, x: t.x, y: t.y })),
+    ],
+    [organesVisibles, tableauxVisibles],
+  )
+
+  const estTableau = (id: string) => tableauxVisibles.some((t) => t.id === id)
 
   // Mesure le conteneur pour que le Stage occupe tout l'espace disponible.
   const roRef = useRef<ResizeObserver | null>(null)
@@ -87,49 +114,104 @@ export function PlanCanvas() {
     })
   }
 
-  function surClicStage(e: KonvaEventObject<MouseEvent | TouchEvent>) {
+  function surAppui(e: KonvaEventObject<MouseEvent | TouchEvent>) {
     const stage = e.target.getStage()
     if (!stage) return
-    const clicSurFond = e.target === stage || e.target.name() === 'fond-plan'
+    const p = pointeurSurPlan(stage)
+    if (!p) return
 
     if (outil.kind === 'calibrer') {
-      const p = pointeurSurPlan(stage)
-      if (p) clicCalibration(p)
+      clicCalibration(p)
       return
     }
-
     if (outil.kind === 'poser') {
-      const p = pointeurSurPlan(stage)
-      if (p) ajouterOrgane(outil.type, p.x, p.y)
+      ajouterOrgane(outil.type, p.x, p.y)
       return
     }
-
     if (outil.kind === 'tableau') {
-      const p = pointeurSurPlan(stage)
-      if (p) poserTableau(outil.type, p.x, p.y)
+      poserTableau(outil.type, p.x, p.y)
       return
     }
-
     if (outil.kind === 'cable') {
-      const p = pointeurSurPlan(stage)
-      if (p) clicCable(p)
+      clicCable(p)
       return
     }
 
-    // outil select : clic dans le vide => désélection (le clic sur un symbole gère sa propre sélection)
-    if (clicSurFond) setSelection([])
+    // Mode sélection : on retient l'organe le plus proche du curseur, pas celui que la
+    // détection de collision de Konva aurait désigné (voir lib/cibles.ts).
+    const cible = cibleLaPlusProche(p, cibles, vue.scale)
+    if (!cible) {
+      setSelection([])
+      return
+    }
+
+    const evt = e.evt as MouseEvent
+    if (evt.shiftKey) toggleSelection(cible.id)
+    else setSelection([cible.id])
+
+    // Le déplacement porte sur cette même cible : sélection et glissement ne peuvent
+    // donc jamais désigner deux organes différents.
+    glisseRef.current = {
+      id: cible.id,
+      estTableau: estTableau(cible.id),
+      decalage: { x: p.x - cible.x, y: p.y - cible.y },
+      aBouge: false,
+    }
+    // Empêche le plan de se déplacer sous l'organe qu'on est en train de saisir.
+    stage.draggable(false)
   }
 
-  function surClicSymbole(id: string, e: KonvaEventObject<MouseEvent | TouchEvent>) {
-    if (outil.kind !== 'select') return
-    e.cancelBubble = true
-    const evt = e.evt as MouseEvent
-    if (evt.shiftKey) toggleSelection(id)
-    else setSelection([id])
+  function surDeplacementPointeur(e: KonvaEventObject<MouseEvent | TouchEvent>) {
+    const stage = e.target.getStage()
+    if (!stage) return
+    const p = pointeurSurPlan(stage)
+    if (!p) return
+
+    const glisse = glisseRef.current
+    if (glisse) {
+      const noeud = stage.findOne('#' + glisse.id)
+      if (noeud) {
+        noeud.position({ x: p.x - glisse.decalage.x, y: p.y - glisse.decalage.y })
+        glisse.aBouge = true
+        noeud.getLayer()?.batchDraw()
+      }
+      return
+    }
+
+    if (outil.kind !== 'select') {
+      if (survole !== null) setSurvole(null)
+      return
+    }
+
+    // Surlignage de survol : montre quelle cible sera prise avant même de cliquer.
+    const cible = cibleLaPlusProche(p, cibles, vue.scale)
+    const id = cible?.id ?? null
+    if (id !== survole) setSurvole(id)
+  }
+
+  function surRelachement(e: KonvaEventObject<MouseEvent | TouchEvent>) {
+    const stage = e.target.getStage()
+    const glisse = glisseRef.current
+    glisseRef.current = null
+
+    if (stage) stage.draggable(outil.kind === 'select')
+    if (!glisse || !glisse.aBouge || !stage) return
+
+    const noeud = stage.findOne('#' + glisse.id)
+    if (!noeud) return
+    // Une seule écriture dans le store en fin de geste : un seul pas d'annulation.
+    if (glisse.estTableau) deplacerTableau(glisse.id, noeud.x(), noeud.y())
+    else deplacerOrgane(glisse.id, noeud.x(), noeud.y())
   }
 
   const echelle = projet.plan.echelle
   const scaleTexte = echelle ? `${echelle.pxParMetre.toFixed(1)} px/m — calé sur ${echelle.coteSur}` : 'échelle non calée'
+  const curseur =
+    outil.kind === 'poser' || outil.kind === 'calibrer' || outil.kind === 'tableau' || outil.kind === 'cable'
+      ? 'crosshair'
+      : survole
+        ? 'move'
+        : 'default'
 
   return (
     <div
@@ -143,38 +225,24 @@ export function PlanCanvas() {
         scaleY={vue.scale}
         x={vue.x}
         y={vue.y}
-        draggable={outil.kind === 'select'}
+        // Le plan ne se déplace que dans le vide : au survol d'un organe, le geste sert
+        // à le déplacer lui, pas à faire glisser le plan sous lui.
+        draggable={outil.kind === 'select' && survole === null}
         onDragEnd={(e) => {
           if (e.target.getStage() === e.target) setVue((v) => ({ ...v, x: e.target.x(), y: e.target.y() }))
         }}
         onWheel={surMolette}
-        onMouseDown={surClicStage}
-        onTouchStart={surClicStage}
-        style={{
-          cursor:
-            outil.kind === 'poser' || outil.kind === 'calibrer' || outil.kind === 'tableau' || outil.kind === 'cable'
-              ? 'crosshair'
-              : 'default',
-        }}
+        onMouseDown={surAppui}
+        onTouchStart={surAppui}
+        onMouseMove={surDeplacementPointeur}
+        onTouchMove={surDeplacementPointeur}
+        onMouseUp={surRelachement}
+        onTouchEnd={surRelachement}
+        onMouseLeave={surRelachement}
+        style={{ cursor: curseur }}
       >
         <Layer>
-          {image && <KonvaImage image={image} name="fond-plan" listening={outil.kind === 'select'} />}
-
-          {calquesVisibles.distribution &&
-            projet.tableaux.map((t) => (
-              <SymboleOrgane
-                key={t.id}
-                type={t.type === 'principal' ? 'tableau-principal' : 'tableau-divisionnaire'}
-                x={t.x}
-                y={t.y}
-                rotation={0}
-                selectionne={selection.includes(t.id)}
-                draggable={outil.kind === 'select'}
-                echelleVue={vue.scale}
-                onClick={(e) => surClicSymbole(t.id, e)}
-                onDeplacer={(x, y) => deplacerTableau(t.id, x, y)}
-              />
-            ))}
+          {image && <KonvaImage image={image} name="fond-plan" listening={false} />}
 
           {projet.cheminements.map((c) => (
             <Line
@@ -207,25 +275,42 @@ export function PlanCanvas() {
           )}
 
           {pointCalibration && (
-            <Circle x={pointCalibration.x} y={pointCalibration.y} radius={5 / vue.scale} fill={COULEUR_CABLE_EN_COURS} />
+            <Circle
+              x={pointCalibration.x}
+              y={pointCalibration.y}
+              radius={5 / vue.scale}
+              fill={COULEUR_CABLE_EN_COURS}
+              listening={false}
+            />
           )}
 
-          {projet.organes
-            .filter((o) => calquesVisibles[SYMBOL_DEFS[o.type].calque])
-            .map((o) => (
-              <SymboleOrgane
-                key={o.id}
-                type={o.type}
-                x={o.x}
-                y={o.y}
-                rotation={o.rotation}
-                selectionne={selection.includes(o.id)}
-                draggable={outil.kind === 'select'}
-                echelleVue={vue.scale}
-                onClick={(e) => surClicSymbole(o.id, e)}
-                onDeplacer={(x, y) => deplacerOrgane(o.id, x, y)}
-              />
-            ))}
+          {tableauxVisibles.map((t) => (
+            <SymboleOrgane
+              key={t.id}
+              id={t.id}
+              type={t.type === 'principal' ? 'tableau-principal' : 'tableau-divisionnaire'}
+              x={t.x}
+              y={t.y}
+              rotation={0}
+              selectionne={selection.includes(t.id)}
+              survole={survole === t.id}
+              echelleVue={vue.scale}
+            />
+          ))}
+
+          {organesVisibles.map((o) => (
+            <SymboleOrgane
+              key={o.id}
+              id={o.id}
+              type={o.type}
+              x={o.x}
+              y={o.y}
+              rotation={o.rotation}
+              selectionne={selection.includes(o.id)}
+              survole={survole === o.id}
+              echelleVue={vue.scale}
+            />
+          ))}
         </Layer>
       </Stage>
 
@@ -285,34 +370,37 @@ export function PlanCanvas() {
 }
 
 function SymboleOrgane({
+  id,
   type,
   x,
   y,
   rotation,
   selectionne,
-  draggable,
+  survole,
   echelleVue,
-  onClick,
-  onDeplacer,
 }: {
+  id: string
   type: TypeOrgane
   x: number
   y: number
   rotation: number
   selectionne: boolean
-  draggable: boolean
+  survole: boolean
   echelleVue: number
-  onClick: (e: KonvaEventObject<MouseEvent | TouchEvent>) => void
-  onDeplacer: (x: number, y: number) => void
 }) {
+  // Halo et symbole vivent dans un même nœud identifié : pendant un déplacement,
+  // PlanCanvas repositionne ce nœud unique, et l'ensemble suit le curseur d'un bloc.
   return (
-    <>
+    <Group id={id} x={x} y={y} listening={false}>
+      {survole && !selectionne && (
+        <Circle x={0} y={0} radius={22} fill={COULEUR_SELECTION} opacity={0.1} listening={false} />
+      )}
       {selectionne && (
         <>
-          <Circle x={x} y={y} radius={22} fill={COULEUR_SELECTION} opacity={0.18} listening={false} />
+          <Circle x={0} y={0} radius={22} fill={COULEUR_SELECTION} opacity={0.18} listening={false} />
           <Circle
-            x={x}
-            y={y}
+            x={0}
+            y={0}
             radius={22}
             stroke={COULEUR_SELECTION}
             strokeWidth={2 / echelleVue}
@@ -323,14 +411,11 @@ function SymboleOrgane({
       )}
       <Symbole
         type={type}
-        x={x}
-        y={y}
+        x={0}
+        y={0}
         rotation={rotation}
         color={selectionne ? COULEUR_SELECTION : COULEUR_ELECTRICITE}
-        draggable={draggable}
-        onClick={onClick}
-        onDragEnd={onDeplacer}
       />
-    </>
+    </Group>
   )
 }
