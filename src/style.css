@@ -559,6 +559,24 @@ textarea {
   margin: 0 0 6px;
 }
 
+.champ-epaisseur-mur {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.champ-epaisseur-mur input {
+  width: 56px;
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .carte-piece {
   cursor: pointer;
 }

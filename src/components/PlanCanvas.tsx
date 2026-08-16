@@ -6,12 +6,19 @@ import { useProjectStore } from '../store/useProjectStore'
 import { useHtmlImage } from '../lib/useHtmlImage'
 import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
-import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_PIECE, COULEUR_SELECTION } from '../lib/couleurs'
+import {
+  COULEUR_CABLE_EN_COURS,
+  COULEUR_ELECTRICITE,
+  COULEUR_MUR,
+  COULEUR_PIECE,
+  COULEUR_SELECTION,
+} from '../lib/couleurs'
 import { cibleLaPlusProche, type Cible } from '../lib/cibles'
 import { pointEtiquette } from '../lib/pieces'
 import { nappesLumineuses } from '../lib/lumiere'
+import { metresVersPx } from '../lib/echelle'
 import { CalqueEclairage } from './CalqueEclairage'
-import type { ModeCheminement, Piece, Point, TypeOrgane } from '../types'
+import type { Echelle, ModeCheminement, Mur, Piece, Point, TypeOrgane } from '../types'
 
 const ZOOM_MIN = 0.15
 const ZOOM_MAX = 8
@@ -72,6 +79,10 @@ export function PlanCanvas() {
   const finaliserPiece = useProjectStore((s) => s.finaliserPiece)
   const annulerPiece = useProjectStore((s) => s.annulerPiece)
   const pieceSelectionnee = useProjectStore((s) => s.pieceSelectionnee)
+  const clicMur = useProjectStore((s) => s.clicMur)
+  const pointsMurEnCours = useProjectStore((s) => s.pointsMurEnCours)
+  const finaliserMur = useProjectStore((s) => s.finaliserMur)
+  const annulerMur = useProjectStore((s) => s.annulerMur)
 
   const image = useHtmlImage(projet.plan.image)
 
@@ -158,6 +169,10 @@ export function PlanCanvas() {
       clicPiece(p)
       return
     }
+    if (outil.kind === 'mur') {
+      clicMur(p)
+      return
+    }
 
     // Mode sélection : on retient l'organe le plus proche du curseur, pas celui que la
     // détection de collision de Konva aurait désigné (voir lib/cibles.ts).
@@ -233,7 +248,8 @@ export function PlanCanvas() {
     outil.kind === 'calibrer' ||
     outil.kind === 'tableau' ||
     outil.kind === 'cable' ||
-    outil.kind === 'piece'
+    outil.kind === 'piece' ||
+    outil.kind === 'mur'
       ? 'crosshair'
       : survole
         ? 'move'
@@ -285,6 +301,27 @@ export function PlanCanvas() {
         )}
 
         <Layer>
+          {projet.murs.map((mur) => (
+            <TraitMur key={mur.id} mur={mur} echelle={echelle} echelleVue={vue.scale} />
+          ))}
+
+          {pointsMurEnCours && pointsMurEnCours.length > 0 && (
+            <>
+              <Line
+                points={aplatir(pointsMurEnCours)}
+                stroke={COULEUR_MUR}
+                strokeWidth={2 / vue.scale}
+                dash={[6 / vue.scale, 4 / vue.scale]}
+                lineCap="round"
+                lineJoin="round"
+                listening={false}
+              />
+              {pointsMurEnCours.map((p, i) => (
+                <Circle key={i} x={p.x} y={p.y} radius={4 / vue.scale} fill={COULEUR_MUR} listening={false} />
+              ))}
+            </>
+          )}
+
           {projet.pieces.map((piece) => (
             <FacePiece key={piece.id} piece={piece} selectionnee={pieceSelectionnee === piece.id} echelleVue={vue.scale} />
           ))}
@@ -447,7 +484,38 @@ export function PlanCanvas() {
           </button>
         </div>
       )}
+
+      {outil.kind === 'mur' && (
+        <div className="hud-instruction">
+          <span>
+            Clique les points du mur ({(pointsMurEnCours ?? []).length}/2 min), puis « Terminer » (ou Entrée).
+            L'épaisseur se règle ensuite dans l'onglet Murs.
+          </span>
+          <button className="btn-lien" disabled={(pointsMurEnCours ?? []).length < 2} onClick={() => finaliserMur()}>
+            Terminer
+          </button>
+          <button className="btn-lien" onClick={() => annulerMur()}>
+            Annuler
+          </button>
+        </div>
+      )}
     </div>
+  )
+}
+
+function TraitMur({ mur, echelle, echelleVue }: { mur: Mur; echelle: Echelle | null; echelleVue: number }) {
+  // Épaisseur réelle si l'échelle est calée (elle zoome alors naturellement avec le plan) ;
+  // sinon un trait d'épaisseur visuellement constante, comme les autres tracés provisoires.
+  const epaisseurPx = metresVersPx(mur.epaisseurM, echelle) ?? 8 / echelleVue
+  return (
+    <Line
+      points={aplatir(mur.points)}
+      stroke={COULEUR_MUR}
+      strokeWidth={epaisseurPx}
+      lineCap="round"
+      lineJoin="round"
+      listening={false}
+    />
   )
 }
 

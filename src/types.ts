@@ -93,6 +93,12 @@ export interface Piece {
   surfaceM2: number
 }
 
+export interface Mur {
+  id: string
+  points: Point[] // polyligne ouverte, pas nécessairement fermée comme le contour d'une pièce
+  epaisseurM: number
+}
+
 export interface Organe {
   id: string
   type: TypeOrgane
@@ -161,6 +167,7 @@ export interface Projet {
   version: 1
   nom: string
   plan: Plan
+  murs: Mur[]
   pieces: Piece[]
   organes: Organe[]
   circuits: Circuit[]
@@ -174,6 +181,7 @@ export function projetVide(nom = 'Nouveau projet'): Projet {
     version: 1,
     nom,
     plan: { image: '', echelle: null, hauteurSousPlafond: 2.5 },
+    murs: [],
     pieces: [],
     organes: [],
     circuits: [],

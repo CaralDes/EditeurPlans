@@ -5,11 +5,12 @@ import { PlanCanvas } from './components/PlanCanvas'
 import { PanneauProprietes } from './components/PanneauProprietes'
 import { PanneauCircuits } from './components/PanneauCircuits'
 import { PanneauPieces } from './components/PanneauPieces'
+import { PanneauMurs } from './components/PanneauMurs'
 import { DialogueEchelle } from './components/DialogueEchelle'
 import { useProjectStore } from './store/useProjectStore'
 import { useAutosave } from './lib/useAutosave'
 
-type Onglet = 'proprietes' | 'pieces' | 'circuits'
+type Onglet = 'proprietes' | 'murs' | 'pieces' | 'circuits'
 
 export default function App() {
   useAutosave()
@@ -21,6 +22,7 @@ export default function App() {
   const setOutil = useProjectStore((s) => s.setOutil)
   const finaliserCable = useProjectStore((s) => s.finaliserCable)
   const finaliserPiece = useProjectStore((s) => s.finaliserPiece)
+  const finaliserMur = useProjectStore((s) => s.finaliserMur)
   const undo = useProjectStore((s) => s.undo)
   const redo = useProjectStore((s) => s.redo)
 
@@ -32,6 +34,7 @@ export default function App() {
       if (e.key === 'Escape') setOutil({ kind: 'select' })
       else if (e.key === 'Enter' && outil.kind === 'cable') finaliserCable()
       else if (e.key === 'Enter' && outil.kind === 'piece') finaliserPiece()
+      else if (e.key === 'Enter' && outil.kind === 'mur') finaliserMur()
       else if ((e.key === 'Delete' || e.key === 'Backspace') && selection.length > 0) supprimerOrganes(selection)
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selection.length > 0) {
         e.preventDefault()
@@ -44,7 +47,18 @@ export default function App() {
     }
     window.addEventListener('keydown', surTouche)
     return () => window.removeEventListener('keydown', surTouche)
-  }, [selection, outil, supprimerOrganes, dupliquerOrganes, setOutil, finaliserCable, finaliserPiece, undo, redo])
+  }, [
+    selection,
+    outil,
+    supprimerOrganes,
+    dupliquerOrganes,
+    setOutil,
+    finaliserCable,
+    finaliserPiece,
+    finaliserMur,
+    undo,
+    redo,
+  ])
 
   return (
     <div className="app">
@@ -61,6 +75,9 @@ export default function App() {
             <button className={`onglet${onglet === 'proprietes' ? ' actif' : ''}`} onClick={() => setOnglet('proprietes')}>
               Propriétés
             </button>
+            <button className={`onglet${onglet === 'murs' ? ' actif' : ''}`} onClick={() => setOnglet('murs')}>
+              Murs
+            </button>
             <button className={`onglet${onglet === 'pieces' ? ' actif' : ''}`} onClick={() => setOnglet('pieces')}>
               Pièces
             </button>
@@ -69,6 +86,7 @@ export default function App() {
             </button>
           </div>
           {onglet === 'proprietes' && <PanneauProprietes />}
+          {onglet === 'murs' && <PanneauMurs />}
           {onglet === 'pieces' && <PanneauPieces />}
           {onglet === 'circuits' && <PanneauCircuits />}
         </aside>

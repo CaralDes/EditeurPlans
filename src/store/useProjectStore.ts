@@ -14,6 +14,7 @@ import {
   type Circuit,
   type FamilleCircuit,
   type ModeCheminement,
+  type Mur,
   type Organe,
   type Piece,
   type Point,
@@ -23,6 +24,10 @@ import {
   type TypePiece,
 } from '../types'
 
+// Épaisseur de mur par défaut à la création : cloison intérieure courante (7 à 10 cm de
+// carreau de plâtre ou ossature) — ajustable ensuite par mur dans le panneau Murs.
+const EPAISSEUR_MUR_DEFAUT = 0.1
+
 export type Outil =
   | { kind: 'select' }
   | { kind: 'calibrer' }
@@ -30,6 +35,7 @@ export type Outil =
   | { kind: 'tableau'; type: 'principal' | 'divisionnaire' }
   | { kind: 'cable'; circuitId: string; organeIds: string[]; mode: ModeCheminement; cheminementId?: string }
   | { kind: 'piece' }
+  | { kind: 'mur' }
 
 interface ProjectState {
   projet: Projet
@@ -46,6 +52,7 @@ interface ProjectState {
   pointsCableEnCours: Point[] | null // tracé en cours, en mode 'cable'
   pointsPieceEnCours: Point[] | null // contour en cours, en mode 'piece'
   pieceSelectionnee: string | null // pilotée depuis le panneau Pièces, pas depuis le plan
+  pointsMurEnCours: Point[] | null // tracé en cours, en mode 'mur'
 
   past: Projet[]
   future: Projet[]
@@ -97,6 +104,12 @@ interface ProjectState {
   supprimerPiece: (id: string) => void
   setPieceSelectionnee: (id: string | null) => void
 
+  clicMur: (p: Point) => void
+  finaliserMur: () => string
+  annulerMur: () => void
+  updateMur: (id: string, patch: Partial<Pick<Mur, 'epaisseurM'>>) => void
+  supprimerMur: (id: string) => void
+
   undo: () => void
   redo: () => void
 }
@@ -133,6 +146,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   pointsCableEnCours: null,
   pointsPieceEnCours: null,
   pieceSelectionnee: null,
+  pointsMurEnCours: null,
 
   past: [],
   future: [],
@@ -146,13 +160,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   // de l'auto-sauvegarde) : repart d'un historique vierge, pas d'un commit incrémental.
   chargerProjet: (projet) => {
     set({
-      projet: { ...projet, cheminements: migrerCheminements(projet.cheminements) },
+      projet: { ...projet, murs: projet.murs ?? [], cheminements: migrerCheminements(projet.cheminements) },
       selection: [],
       outil: { kind: 'select' },
       pointCalibration: null,
       distanceEnAttente: null,
       pointsCableEnCours: null,
       pointsPieceEnCours: null,
+      pointsMurEnCours: null,
       pieceSelectionnee: null,
       past: [],
       future: [],
@@ -170,7 +185,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   setOutil: (outil) =>
-    set({ outil, pointCalibration: null, distanceEnAttente: null, pointsCableEnCours: null, pointsPieceEnCours: null }),
+    set({
+      outil,
+      pointCalibration: null,
+      distanceEnAttente: null,
+      pointsCableEnCours: null,
+      pointsPieceEnCours: null,
+      pointsMurEnCours: null,
+    }),
 
   clicCalibration: (point) => {
     const { pointCalibration } = get()
@@ -478,6 +500,38 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   setPieceSelectionnee: (id) => set({ pieceSelectionnee: id }),
+
+  clicMur: (point) => {
+    const s = get()
+    if (s.outil.kind !== 'mur') return
+    set({ pointsMurEnCours: [...(s.pointsMurEnCours ?? []), point] })
+  },
+
+  finaliserMur: () => {
+    const s = get()
+    if (!s.pointsMurEnCours || s.pointsMurEnCours.length < 2) {
+      set({ pointsMurEnCours: null })
+      return ''
+    }
+    const p = s.projet
+    const id = idUnique('mur')
+    const mur: Mur = { id, points: s.pointsMurEnCours, epaisseurM: EPAISSEUR_MUR_DEFAUT }
+    commit(set, get, { ...p, murs: [...p.murs, mur] })
+    set({ pointsMurEnCours: null, outil: { kind: 'select' } })
+    return id
+  },
+
+  annulerMur: () => set({ pointsMurEnCours: null, outil: { kind: 'select' } }),
+
+  updateMur: (id, patch) => {
+    const p = get().projet
+    commit(set, get, { ...p, murs: p.murs.map((m) => (m.id === id ? { ...m, ...patch } : m)) })
+  },
+
+  supprimerMur: (id) => {
+    const p = get().projet
+    commit(set, get, { ...p, murs: p.murs.filter((m) => m.id !== id) })
+  },
 
   undo: () => {
     const s = get()
