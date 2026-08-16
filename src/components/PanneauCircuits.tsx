@@ -2,6 +2,8 @@ import { useProjectStore } from '../store/useProjectStore'
 import { suggererCircuit } from '../lib/circuits'
 import { circuitDef } from '../regles/moteur'
 import { resumeCircuits, totauxParSection } from '../lib/metre'
+import { construireSchemaTableau } from '../lib/schemaTableau'
+import { SchemaTableau } from './SchemaTableau'
 
 export function PanneauCircuits() {
   const projet = useProjectStore((s) => s.projet)
@@ -61,6 +63,18 @@ export function PanneauCircuits() {
           </div>
         )}
       </section>
+
+      {tableau && (
+        <section>
+          <h4>Schéma du tableau</h4>
+          <p className="panneau-note" style={{ marginBottom: 10 }}>
+            Un disjoncteur par circuit, sous son différentiel. Une boîte en rouge signale un
+            écart avec la règle NF C 15-100 : calibre ou section modifiés à la main, mauvais
+            type de différentiel, ou trop de points sur le circuit — survole-la pour le détail.
+          </p>
+          <SchemaTableau schema={construireSchemaTableau(tableau, projet.circuits)} />
+        </section>
+      )}
 
       <section>
         <h4>Nouveau circuit</h4>
