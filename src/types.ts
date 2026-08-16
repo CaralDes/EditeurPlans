@@ -107,6 +107,10 @@ export interface Organe {
   circuitId: string | null
   repere: string // ex. "PC-07", attribué par famille
   note: string
+  // Caractéristiques d'éclairage, renseignées pour les luminaires uniquement.
+  // Optionnelles : un projet enregistré avant leur introduction reste lisible.
+  fluxLm?: number
+  temperatureK?: number
 }
 
 export interface Circuit {

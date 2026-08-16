@@ -17,6 +17,10 @@ export function BarreOutils() {
   const redo = useProjectStore((s) => s.redo)
   const peutUndo = useProjectStore((s) => s.past.length > 0)
   const peutRedo = useProjectStore((s) => s.future.length > 0)
+  const modeEclairage = useProjectStore((s) => s.modeEclairage)
+  const toggleModeEclairage = useProjectStore((s) => s.toggleModeEclairage)
+  const intensiteNuit = useProjectStore((s) => s.intensiteNuit)
+  const setIntensiteNuit = useProjectStore((s) => s.setIntensiteNuit)
 
   function surImport(e: React.ChangeEvent<HTMLInputElement>) {
     const fichier = e.target.files?.[0]
@@ -108,6 +112,29 @@ export function BarreOutils() {
           />
           m
         </label>
+      </div>
+
+      <div className="barre-groupe">
+        <button
+          className={`btn${modeEclairage ? ' actif' : ''}`}
+          onClick={toggleModeEclairage}
+          title="Simuler l'ambiance lumineuse des luminaires posés"
+        >
+          ☾ Ombres et lumières
+        </button>
+        {modeEclairage && (
+          <label className="champ-inline" title="Obscurité de fond, pour juger le contraste">
+            Ambiance
+            <input
+              type="range"
+              min={0.3}
+              max={1}
+              step={0.02}
+              value={intensiteNuit}
+              onChange={(e) => setIntensiteNuit(Number(e.target.value))}
+            />
+          </label>
+        )}
       </div>
 
       <div className="barre-groupe">

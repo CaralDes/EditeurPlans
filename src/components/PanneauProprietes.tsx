@@ -1,6 +1,7 @@
 import { useProjectStore } from '../store/useProjectStore'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { hauteurRecommandee } from '../regles/moteur'
+import { TEMPERATURES, estLuminaire, paramsParDefaut, rayonEclairageM } from '../lib/lumiere'
 import type { PoseHauteur } from '../types'
 
 const POSES: { valeur: PoseHauteur; label: string }[] = [
@@ -111,6 +112,48 @@ export function PanneauProprietes() {
           />
         </label>
       )}
+
+      {estLuminaire(organe.type) &&
+        (() => {
+          const defauts = paramsParDefaut(organe.type)!
+          const flux = organe.fluxLm ?? defauts.fluxLm
+          const temperature = organe.temperatureK ?? defauts.temperatureK
+          const hauteurSource =
+            organe.pose === 'plafond' ? projet.plan.hauteurSousPlafond : organe.hauteurM || projet.plan.hauteurSousPlafond
+          return (
+            <>
+              <h4 className="panneau-sous-titre">Éclairage</h4>
+              <label className="champ-bloc">
+                Flux lumineux (lumens)
+                <input
+                  type="number"
+                  step={50}
+                  min={50}
+                  max={10000}
+                  value={flux}
+                  onChange={(e) => updateOrgane(organe.id, { fluxLm: Number(e.target.value) })}
+                />
+              </label>
+              <label className="champ-bloc">
+                Température de couleur
+                <select
+                  value={temperature}
+                  onChange={(e) => updateOrgane(organe.id, { temperatureK: Number(e.target.value) })}
+                >
+                  {TEMPERATURES.map((t) => (
+                    <option key={t.k} value={t.k}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="panneau-note">
+                Nappe éclairée d'environ {rayonEclairageM(flux, hauteurSource).toFixed(1)} m de rayon. Visible via
+                « Ombres et lumières ».
+              </p>
+            </>
+          )
+        })()}
 
       <label className="champ-bloc">
         Note

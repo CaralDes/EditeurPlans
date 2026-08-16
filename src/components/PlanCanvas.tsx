@@ -8,6 +8,8 @@ import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_SELECTION } from '../lib/couleurs'
 import { cibleLaPlusProche, type Cible } from '../lib/cibles'
+import { nappesLumineuses } from '../lib/lumiere'
+import { CalqueEclairage } from './CalqueEclairage'
 import type { ModeCheminement, Point, TypeOrgane } from '../types'
 
 const ZOOM_MIN = 0.15
@@ -62,6 +64,8 @@ export function PlanCanvas() {
   const setModeCableEnCours = useProjectStore((s) => s.setModeCableEnCours)
   const finaliserCable = useProjectStore((s) => s.finaliserCable)
   const annulerCable = useProjectStore((s) => s.annulerCable)
+  const modeEclairage = useProjectStore((s) => s.modeEclairage)
+  const intensiteNuit = useProjectStore((s) => s.intensiteNuit)
 
   const image = useHtmlImage(projet.plan.image)
 
@@ -84,6 +88,14 @@ export function PlanCanvas() {
   )
 
   const estTableau = (id: string) => tableauxVisibles.some((t) => t.id === id)
+
+  const nappes = useMemo(
+    () =>
+      modeEclairage
+        ? nappesLumineuses(organesVisibles, projet.plan.echelle, projet.plan.hauteurSousPlafond)
+        : [],
+    [modeEclairage, organesVisibles, projet.plan.echelle, projet.plan.hauteurSousPlafond],
+  )
 
   // Mesure le conteneur pour que le Stage occupe tout l'espace disponible.
   const roRef = useRef<ResizeObserver | null>(null)
@@ -241,9 +253,24 @@ export function PlanCanvas() {
         onMouseLeave={surRelachement}
         style={{ cursor: curseur }}
       >
-        <Layer>
+        {/* Fond de plan seul : l'ambiance lumineuse se compose par-dessus, sans toucher
+            aux symboles qui doivent rester lisibles quelle que soit l'ambiance. */}
+        <Layer listening={false}>
           {image && <KonvaImage image={image} name="fond-plan" listening={false} />}
+        </Layer>
 
+        {modeEclairage && (
+          <Layer listening={false}>
+            <CalqueEclairage
+              nappes={nappes}
+              largeur={image?.width ?? taille.w / vue.scale}
+              hauteur={image?.height ?? taille.h / vue.scale}
+              intensiteNuit={intensiteNuit}
+            />
+          </Layer>
+        )}
+
+        <Layer>
           {projet.cheminements.map((c) => (
             <Line
               key={c.id}

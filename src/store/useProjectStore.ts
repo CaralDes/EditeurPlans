@@ -4,6 +4,7 @@ import { prochainRepere } from '../lib/reperes'
 import { calculerEchelle } from '../lib/echelle'
 import { suggererCircuit } from '../lib/circuits'
 import { idUnique } from '../lib/id'
+import { paramsParDefaut } from '../lib/lumiere'
 import { circuitDef, hauteurRecommandee, typeDifferentielRequis } from '../regles/moteur'
 import {
   projetVide,
@@ -30,6 +31,11 @@ interface ProjectState {
   selection: string[]
   outil: Outil
   calquesVisibles: Record<Calque, boolean>
+  // Réglages d'affichage du mode « Ombres et lumières ». Volontairement hors du projet :
+  // c'est une façon de regarder le plan, pas une donnée du plan — donc ni enregistrée
+  // dans le fichier .cuivre, ni versée à l'historique d'annulation.
+  modeEclairage: boolean
+  intensiteNuit: number
   pointCalibration: Point | null // premier clic en attente du second, en mode 'calibrer'
   distanceEnAttente: { a: Point; b: Point } | null // deux points posés, en attente de la saisie de distance
   pointsCableEnCours: Point[] | null // tracé en cours, en mode 'cable'
@@ -57,6 +63,8 @@ interface ProjectState {
   toggleSelection: (id: string) => void
 
   toggleCalque: (calque: Calque) => void
+  toggleModeEclairage: () => void
+  setIntensiteNuit: (v: number) => void
 
   poserTableau: (type: 'principal' | 'divisionnaire', x: number, y: number) => string
   deplacerTableau: (id: string, x: number, y: number) => void
@@ -94,6 +102,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   selection: [],
   outil: { kind: 'select' },
   calquesVisibles: calquesInitiaux,
+  modeEclairage: false,
+  intensiteNuit: 0.82,
   pointCalibration: null,
   distanceEnAttente: null,
   pointsCableEnCours: null,
@@ -171,6 +181,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       circuitId: null,
       repere: prochainRepere(p.organes, type),
       note: '',
+      ...paramsParDefaut(type),
     }
     commit(set, get, { ...p, organes: [...p.organes, organe] })
     set({ selection: [id] })
@@ -228,6 +239,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
   toggleCalque: (calque) =>
     set((s) => ({ calquesVisibles: { ...s.calquesVisibles, [calque]: !s.calquesVisibles[calque] } })),
+
+  toggleModeEclairage: () => set((s) => ({ modeEclairage: !s.modeEclairage })),
+  setIntensiteNuit: (v) => set({ intensiteNuit: Math.min(1, Math.max(0, v)) }),
 
   // v1 : un seul tableau divisionnaire par projet (voir lib/metre.ts, qui ne lit que le
   // premier). Seedé avec les 2 différentiels 30 mA minimum imposés par la norme.

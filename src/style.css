@@ -531,3 +531,17 @@ textarea {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+.panneau-sous-titre {
+  margin: 6px 0 -2px;
+  font-size: 0.75rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+.champ-inline input[type='range'] {
+  width: 92px;
+  padding: 0;
+}
