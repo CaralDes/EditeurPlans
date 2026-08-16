@@ -8,7 +8,7 @@ import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
 import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_PIECE, COULEUR_SELECTION } from '../lib/couleurs'
 import { cibleLaPlusProche, type Cible } from '../lib/cibles'
-import { centreEtiquette } from '../lib/pieces'
+import { pointEtiquette } from '../lib/pieces'
 import { nappesLumineuses } from '../lib/lumiere'
 import { CalqueEclairage } from './CalqueEclairage'
 import type { ModeCheminement, Piece, Point, TypeOrgane } from '../types'
@@ -460,7 +460,7 @@ function FacePiece({
   selectionnee: boolean
   echelleVue: number
 }) {
-  const centre = centreEtiquette(piece.polygone)
+  const centre = pointEtiquette(piece.polygone)
   const libelleSurface = piece.surfaceM2 > 0 ? `${piece.surfaceM2.toFixed(1)} m²` : ''
   return (
     <>
