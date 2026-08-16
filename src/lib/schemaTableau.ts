@@ -1,5 +1,5 @@
 import type { Circuit, Differentiel, Tableau } from '../types'
-import { circuitDef, typeDifferentielRequis } from '../regles/moteur'
+import { circuitDef, maxCircuitsParDifferentiel, typeDifferentielRequis } from '../regles/moteur'
 
 // Regroupe les circuits d'un tableau par différentiel (comme un vrai schéma unifilaire)
 // et signale, pour chacun, les écarts avec la règle NF C 15-100 dont il est issu — calibre
@@ -20,6 +20,8 @@ export interface BrancheCircuit {
 export interface BrancheDifferentiel {
   differentiel: Differentiel
   circuits: BrancheCircuit[]
+  /** Alertes portant sur le différentiel lui-même, pas sur l'un de ses circuits. */
+  alertes: string[]
 }
 
 export interface SchemaTableauData {
@@ -65,12 +67,18 @@ function evaluerCircuit(circuit: Circuit, typeDifferentielParent: Differentiel['
 export function construireSchemaTableau(tableau: Tableau, circuits: Circuit[]): SchemaTableauData {
   const idsDifferentiels = new Set(tableau.differentiels.map((d) => d.id))
 
-  const branches: BrancheDifferentiel[] = tableau.differentiels.map((differentiel) => ({
-    differentiel,
-    circuits: circuits
+  const maxCircuits = maxCircuitsParDifferentiel()
+
+  const branches: BrancheDifferentiel[] = tableau.differentiels.map((differentiel) => {
+    const circuitsDuDdr = circuits
       .filter((c) => c.ddrId === differentiel.id)
-      .map((c) => evaluerCircuit(c, differentiel.type, false)),
-  }))
+      .map((c) => evaluerCircuit(c, differentiel.type, false))
+    const alertes: string[] = []
+    if (circuitsDuDdr.length > maxCircuits) {
+      alertes.push(`${circuitsDuDdr.length} circuits sur ce différentiel, ${maxCircuits} maximum`)
+    }
+    return { differentiel, circuits: circuitsDuDdr, alertes }
+  })
 
   const circuitsSansDifferentiel = circuits
     .filter((c) => !c.ddrId || !idsDifferentiels.has(c.ddrId))
@@ -91,7 +99,8 @@ export interface Boite {
 
 export interface EnteteGroupe extends Boite {
   libelle: string
-  alerte: boolean // true pour le groupe "sans différentiel" (anomalie à corriger)
+  alerte: boolean // groupe « sans différentiel », ou différentiel portant ses propres alertes
+  alertes: string[]
 }
 
 export interface BoiteCircuit extends Boite {
@@ -130,13 +139,20 @@ function largeurGroupe(nbCircuits: number): number {
 }
 
 export function calculerLayoutSchema(schema: SchemaTableauData): LayoutSchema {
-  const groupes: { libelle: string; alerte: boolean; circuits: BrancheCircuit[] }[] = schema.branches.map((b) => ({
-    libelle: `Différentiel ${b.differentiel.type} · ${b.differentiel.calibreA} A`,
-    alerte: false,
-    circuits: b.circuits,
-  }))
+  const groupes: { libelle: string; alerte: boolean; alertes: string[]; circuits: BrancheCircuit[] }[] =
+    schema.branches.map((b) => ({
+      libelle: `Différentiel ${b.differentiel.type} · ${b.differentiel.calibreA} A`,
+      alerte: b.alertes.length > 0,
+      alertes: b.alertes,
+      circuits: b.circuits,
+    }))
   if (schema.circuitsSansDifferentiel.length > 0) {
-    groupes.push({ libelle: 'Sans différentiel', alerte: true, circuits: schema.circuitsSansDifferentiel })
+    groupes.push({
+      libelle: 'Sans différentiel',
+      alerte: true,
+      alertes: ['Ces circuits ne sont rattachés à aucun différentiel du tableau'],
+      circuits: schema.circuitsSansDifferentiel,
+    })
   }
 
   const largeursGroupes = groupes.map((g) => largeurGroupe(g.circuits.length))
@@ -181,6 +197,7 @@ export function calculerLayoutSchema(schema: SchemaTableauData): LayoutSchema {
       hauteur: HAUTEUR_ENTETE,
       libelle: groupe.libelle,
       alerte: groupe.alerte,
+      alertes: groupe.alertes,
     })
 
     const nbCircuits = groupe.circuits.length

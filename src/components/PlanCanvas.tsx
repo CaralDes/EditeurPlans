@@ -17,6 +17,7 @@ import { cibleLaPlusProche, type Cible } from '../lib/cibles'
 import { pointEtiquette } from '../lib/pieces'
 import { nappesLumineuses } from '../lib/lumiere'
 import { metresVersPx } from '../lib/echelle'
+import { enregistrerStage } from '../lib/apercuPlan'
 import { CalqueEclairage } from './CalqueEclairage'
 import type { Echelle, ModeCheminement, Mur, Piece, Point, TypeOrgane } from '../types'
 
@@ -261,6 +262,8 @@ export function PlanCanvas() {
       style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: 'var(--sunk)' }}
     >
       <Stage
+        // Rend le canevas capturable par l'export du dossier (voir lib/apercuPlan.ts).
+        ref={enregistrerStage}
         width={taille.w}
         height={taille.h}
         scaleX={vue.scale}

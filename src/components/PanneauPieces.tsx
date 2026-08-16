@@ -118,6 +118,20 @@ export function PanneauPieces() {
                       {conformite.prisesPosees} / {conformite.prisesRequises}
                     </span>
                   </li>
+                  {conformite.prisesPlanTravailRequises > 0 && (
+                    <li>
+                      <span>dont plan de travail</span>
+                      <span
+                        className={
+                          conformite.prisesPlanTravailPosees >= conformite.prisesPlanTravailRequises
+                            ? 'badge-ok'
+                            : 'badge-manque'
+                        }
+                      >
+                        {conformite.prisesPlanTravailPosees} / {conformite.prisesPlanTravailRequises}
+                      </span>
+                    </li>
+                  )}
                   <li>
                     <span>Éclairage</span>
                     <span
@@ -126,7 +140,20 @@ export function PanneauPieces() {
                       {conformite.eclairagePose} / {conformite.eclairageRequis}
                     </span>
                   </li>
+                  {conformite.rj45Requises > 0 && (
+                    <li>
+                      <span>RJ45</span>
+                      <span className={conformite.rj45Posees >= conformite.rj45Requises ? 'badge-ok' : 'badge-manque'}>
+                        {conformite.rj45Posees} / {conformite.rj45Requises}
+                      </span>
+                    </li>
+                  )}
                 </ul>
+                {conformite.surfaceInconnue && (
+                  <p className="panneau-alerte">
+                    Surface inconnue (échelle non calée) : les seuils dépendant de la surface ne sont pas appliqués.
+                  </p>
+                )}
                 {conformite.regle && (
                   <p className="panneau-note">
                     {conformite.regle.prisesRegle} — <em>{conformite.regle.source}</em>

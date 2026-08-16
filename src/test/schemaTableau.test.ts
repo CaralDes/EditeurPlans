@@ -92,6 +92,22 @@ describe('construireSchemaTableau', () => {
     expect(c1.alertes.some((a) => a.includes('maximum'))).toBe(true)
   })
 
+  it('signale un différentiel qui protège plus de 8 circuits', () => {
+    const huit = Array.from({ length: 8 }, (_, i) => circuit({ id: `c${i}`, ddrId: 'ddr-ac' }))
+    const schemaOk = construireSchemaTableau(tableau, huit)
+    expect(schemaOk.branches.find((b) => b.differentiel.id === 'ddr-ac')!.alertes).toEqual([])
+
+    const neuf = [...huit, circuit({ id: 'c8', ddrId: 'ddr-ac' })]
+    const schemaTrop = construireSchemaTableau(tableau, neuf)
+    const brancheTrop = schemaTrop.branches.find((b) => b.differentiel.id === 'ddr-ac')!
+    expect(brancheTrop.alertes).toHaveLength(1)
+    expect(brancheTrop.alertes[0]).toContain('9 circuits')
+
+    // L'en-tête du différentiel passe alors en alerte dans le schéma rendu.
+    const entete = calculerLayoutSchema(schemaTrop).entetes.find((e) => e.libelle.includes('AC'))!
+    expect(entete.alerte).toBe(true)
+  })
+
   it('range dans "circuitsSansDifferentiel" tout circuit sans ddrId, ou dont le ddrId ne correspond à aucun différentiel du tableau', () => {
     const circuits: Circuit[] = [
       circuit({ id: 'c1', ddrId: null }),

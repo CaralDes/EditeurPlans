@@ -1,11 +1,11 @@
 {
-  "version": "nfc15100@2026-08",
-  "avertissement": "Base de valeurs de référence compilées depuis des guides professionnels publics (Legrand, Schneider Electric, Promotelec, Hager, Nexans, 123elec, schema-electrique.net, Mon Club Elec). Le texte officiel de la norme NF C 15-100 n'est pas librement consultable. Ces valeurs sont un point de départ à faire valider par un électricien avant exécution — elles ne constituent pas un document de conformité.",
+  "version": "nfc15100@2026-08b",
+  "avertissement": "Base de valeurs de référence compilées depuis des guides professionnels publics (Legrand, Schneider Electric, Promotelec, Hager, Nexans, 123elec, schema-electrique.net, Mon Club Elec, IZI by EDF). Le texte officiel de la norme NF C 15-100 n'est pas librement consultable. Ces valeurs sont un point de départ à faire valider par un électricien avant exécution — elles ne constituent pas un document de conformité.",
 
   "equipementParPiece": [
-    { "type": "sejour", "libelle": "Séjour", "prisesMin": 5, "prisesRegle": "1 par tranche de 4 m², min. 5 jusqu'à 28 m², 7 au-delà", "seuilM2": 28, "prisesMinAuDela": 7, "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
-    { "type": "cuisine", "libelle": "Cuisine", "prisesMin": 6, "prisesRegle": "dont 4 au-dessus du plan de travail ; 3 si surface ≤ 4 m²", "seuilM2": 4, "prisesMinSousSeuil": 3, "eclairageMin": 1, "source": "Legrand — norme cuisine NF C 15-100" },
-    { "type": "chambre", "libelle": "Chambre", "prisesMin": 3, "prisesRegle": "réparties + 1 à proximité de la commande d'éclairage", "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
+    { "type": "sejour", "libelle": "Séjour", "prisesMin": 5, "prisesParTrancheM2": 4, "prisesRegle": "1 par tranche de 4 m², minimum 5 (soit 7 à 28 m², 10 à 40 m²…)", "rj45Min": 2, "eclairageMin": 1, "source": "Legrand / IZI by EDF — norme prises de courant" },
+    { "type": "cuisine", "libelle": "Cuisine", "prisesMin": 6, "prisesPlanTravailMin": 4, "prisesRegle": "6 prises dont 4 au-dessus du plan de travail ; 3 seulement si surface ≤ 4 m²", "seuilM2": 4, "prisesMinSousSeuil": 3, "eclairageMin": 1, "source": "Legrand — norme cuisine NF C 15-100" },
+    { "type": "chambre", "libelle": "Chambre", "prisesMin": 3, "prisesRegle": "réparties + 1 à proximité de la commande d'éclairage", "rj45Min": 1, "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
     { "type": "salle-de-bain", "libelle": "Salle de bains", "prisesMin": 1, "prisesRegle": "hors volumes 0 et 1 ; liaison équipotentielle locale obligatoire", "eclairageMin": 1, "source": "Legrand — norme prises de courant" },
     { "type": "circulation", "libelle": "Circulation / entrée", "prisesMin": 1, "prisesRegle": "toute pièce ou dégagement > 4 m²", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
     { "type": "cellier", "libelle": "Cellier", "prisesMin": 0, "prisesRegle": "non exigé, recommandé", "eclairageMin": 1, "source": "schema-electrique.net — équipement minimum" },
@@ -28,7 +28,7 @@
     { "id": "chauffe-eau", "libelle": "Chauffe-eau", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
     { "id": "vmc", "libelle": "VMC", "famille": "vmc", "sectionMm2": 1.5, "calibreA": 2, "maxOrganes": 1, "note": "calibre 2 A, parfois posé sur circuit dédié 16A selon groupe", "source": "Promotelec — brochure NF C 15-100" },
     { "id": "volets-roulants", "libelle": "Volets roulants", "famille": "volets", "sectionMm2": 1.5, "calibreA": 16, "maxOrganes": 8, "note": "répartir sur 2 circuits si possible pour la sécurité", "source": "Legrand — volets par disjoncteur" },
-    { "id": "chauffage-16A", "libelle": "Chauffage électrique (16 A)", "famille": "chauffage", "sectionMm2": 1.5, "calibreA": 16, "puissanceMaxW": 3000, "note": "jusqu'à 4 convecteurs de 750 W", "source": "Nexans — circuits de chauffage NF C 15-100" },
+    { "id": "chauffage-16A", "libelle": "Chauffage électrique (16 A)", "famille": "chauffage", "sectionMm2": 1.5, "calibreA": 16, "puissanceMaxW": 3500, "note": "jusqu'à 4 convecteurs de 750 W", "source": "123elec / Hager — section conducteur et calibre disjoncteur" },
     { "id": "chauffage-20A", "libelle": "Chauffage électrique (20 A)", "famille": "chauffage", "sectionMm2": 2.5, "calibreA": 20, "puissanceMaxW": 4500, "source": "Nexans — circuits de chauffage NF C 15-100" },
     { "id": "communication", "libelle": "Coffret communication", "famille": "communication", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 2, "source": "Legrand — norme prises de courant" }
   ],
@@ -47,10 +47,21 @@
     "reserveModulesMin": 0.20,
     "differentielsMin": 2,
     "differentielsCalibre30mA": true,
+    "maxCircuitsParDifferentiel": 8,
+    "maxCircuitsParDifferentielRegle": "un même interrupteur différentiel ne doit pas protéger plus de 8 circuits, et ce maximum suppose en plus que la règle amont ou aval de calibre soit respectée",
+    "maxCircuitsParDifferentielSource": "Legrand — combien de disjoncteurs divisionnaires par interrupteur différentiel",
     "typeAImposePour": ["plaque-cuisson", "lave-linge", "irve"],
     "etel": { "largeurMm": 600, "profondeurMinMm": 250, "hauteurPoigneesMinM": 0.90, "hauteurPoigneesMaxM": 1.80 },
     "distances": { "gazCm": 10, "sourceChaleurCm": 40, "pointEauCm": 60 },
     "source": "Promotelec — brochure NF C 15-100"
+  },
+
+  "circuitsEclairage": {
+    "nombreMin": 1,
+    "nombreMinAuDelaSeuil": 2,
+    "seuilSurfaceM2": 35,
+    "regle": "au moins 2 circuits d'éclairage indépendants au-delà de 35 m² habitables, pour qu'un défaut ne plonge pas tout le logement dans le noir",
+    "source": "123elec — norme éclairage NF C 15-100"
   },
 
   "chuteDeTensionMax": {

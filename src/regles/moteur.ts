@@ -6,6 +6,12 @@ interface EquipementPiece {
   libelle: string
   prisesMin: number
   prisesRegle: string
+  /** Séjour : 1 prise par tranche de N m², en plus du plancher prisesMin. */
+  prisesParTrancheM2?: number
+  /** Cuisine : part des prises qui doit se trouver au-dessus du plan de travail. */
+  prisesPlanTravailMin?: number
+  /** Prises de communication (RJ45) exigées dans la pièce. */
+  rj45Min?: number
   seuilM2?: number
   prisesMinAuDela?: number
   prisesMinSousSeuil?: number
@@ -38,7 +44,21 @@ const REGLES = regles as {
   equipementParPiece: EquipementPiece[]
   circuits: CircuitDef[]
   hauteursPose: HauteurPoseDef[]
-  tableau: { differentielsMin: number; typeAImposePour: string[]; [cle: string]: unknown }
+  tableau: {
+    differentielsMin: number
+    maxCircuitsParDifferentiel: number
+    maxCircuitsParDifferentielRegle: string
+    maxCircuitsParDifferentielSource: string
+    typeAImposePour: string[]
+    [cle: string]: unknown
+  }
+  circuitsEclairage: {
+    nombreMin: number
+    nombreMinAuDelaSeuil: number
+    seuilSurfaceM2: number
+    regle: string
+    source: string
+  }
   chuteDeTensionMax: { eclairage: number; prises: number; source: string }
 }
 
@@ -72,6 +92,30 @@ export function differentielsMinimum(): number {
   return REGLES.tableau.differentielsMin
 }
 
+// Un même interrupteur différentiel ne doit pas protéger plus de N circuits.
+export function maxCircuitsParDifferentiel(): number {
+  return REGLES.tableau.maxCircuitsParDifferentiel
+}
+
+export function regleMaxCircuitsParDifferentiel(): { regle: string; source: string } {
+  return {
+    regle: REGLES.tableau.maxCircuitsParDifferentielRegle,
+    source: REGLES.tableau.maxCircuitsParDifferentielSource,
+  }
+}
+
+// Nombre de circuits d'éclairage indépendants attendus : 2 au-delà du seuil de surface
+// habitable, pour qu'un défaut ne plonge pas tout le logement dans le noir.
+export function circuitsEclairageMin(surfaceHabitableM2: number): {
+  nombre: number
+  regle: string
+  source: string
+} {
+  const def = REGLES.circuitsEclairage
+  const nombre = surfaceHabitableM2 > def.seuilSurfaceM2 ? def.nombreMinAuDelaSeuil : def.nombreMin
+  return { nombre, regle: def.regle, source: def.source }
+}
+
 export const PRISES_TYPES = new Set([
   'prise16A',
   'prise16A-double',
@@ -85,6 +129,14 @@ export interface ConformitePiece {
   prisesRequises: number
   eclairagePose: number
   eclairageRequis: number
+  /** Prises de communication RJ45 (0/0 quand la pièce n'en exige pas). */
+  rj45Posees: number
+  rj45Requises: number
+  /** Cuisine : prises posées au-dessus du plan de travail (0/0 ailleurs). */
+  prisesPlanTravailPosees: number
+  prisesPlanTravailRequises: number
+  /** true quand la surface est inconnue (échelle non calée) : les seuils par surface sont alors indécidables. */
+  surfaceInconnue: boolean
   ok: boolean
   regle: EquipementPiece | undefined
 }
@@ -96,17 +148,34 @@ export function verifierPiece(piece: Piece, organes: Organe[]): ConformitePiece 
   const eclairagePose = dansPiece.filter((o) =>
     ['point-lumineux', 'applique', 'spot', 'reglette-led'].includes(o.type),
   ).length
+  const rj45Posees = dansPiece.filter((o) => o.type === 'prise-rj45').length
+  const prisesPlanTravailPosees = dansPiece.filter(
+    (o) => PRISES_TYPES.has(o.type) && o.pose === 'plan-travail',
+  ).length
 
-  // Lecture à deux paliers (par surface), la plus largement reprise dans les guides consultés :
-  // cuisine ≤ 4 m² → palier bas ; séjour > 28 m² → palier haut ; sinon le minimum de base.
+  // Sans échelle calée, la surface vaut 0 : ce n'est pas « une petite pièce », c'est une
+  // surface inconnue. On s'en tient alors au minimum de base, sans appliquer les seuils
+  // par surface — sinon une cuisine non calibrée passerait silencieusement de 6 à 3 prises.
+  const surfaceInconnue = piece.surfaceM2 <= 0
+
   let prisesRequises = regle?.prisesMin ?? 0
-  if (regle?.seuilM2 !== undefined && regle.prisesMinSousSeuil !== undefined && piece.surfaceM2 <= regle.seuilM2) {
-    prisesRequises = regle.prisesMinSousSeuil
-  } else if (regle?.seuilM2 !== undefined && regle.prisesMinAuDela !== undefined && piece.surfaceM2 > regle.seuilM2) {
-    prisesRequises = regle.prisesMinAuDela
+  if (!surfaceInconnue && regle) {
+    if (regle.seuilM2 !== undefined && regle.prisesMinSousSeuil !== undefined && piece.surfaceM2 <= regle.seuilM2) {
+      prisesRequises = regle.prisesMinSousSeuil
+    } else if (regle.seuilM2 !== undefined && regle.prisesMinAuDela !== undefined && piece.surfaceM2 > regle.seuilM2) {
+      prisesRequises = regle.prisesMinAuDela
+    }
+    // Séjour : 1 prise par tranche entamée de N m², le plancher prisesMin restant prioritaire.
+    if (regle.prisesParTrancheM2 !== undefined) {
+      prisesRequises = Math.max(prisesRequises, Math.ceil(piece.surfaceM2 / regle.prisesParTrancheM2))
+    }
   }
 
   const eclairageRequis = regle?.eclairageMin ?? 0
+  const rj45Requises = regle?.rj45Min ?? 0
+  // La part « plan de travail » ne peut pas dépasser le nombre de prises réellement exigé
+  // (cuisine ≤ 4 m² : 3 prises au total, donc pas 4 au-dessus du plan de travail).
+  const prisesPlanTravailRequises = Math.min(regle?.prisesPlanTravailMin ?? 0, prisesRequises)
 
   return {
     piece,
@@ -114,7 +183,16 @@ export function verifierPiece(piece: Piece, organes: Organe[]): ConformitePiece 
     prisesRequises,
     eclairagePose,
     eclairageRequis,
-    ok: prisesPosees >= prisesRequises && eclairagePose >= eclairageRequis,
+    rj45Posees,
+    rj45Requises,
+    prisesPlanTravailPosees,
+    prisesPlanTravailRequises,
+    surfaceInconnue,
+    ok:
+      prisesPosees >= prisesRequises &&
+      eclairagePose >= eclairageRequis &&
+      rj45Posees >= rj45Requises &&
+      prisesPlanTravailPosees >= prisesPlanTravailRequises,
     regle,
   }
 }

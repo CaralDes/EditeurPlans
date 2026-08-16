@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { useProjectStore } from '../store/useProjectStore'
 import { FichierProjetInvalide, analyser, declencherTelechargement, lireFichier, nomFichier, serialiser } from '../lib/fichierProjet'
+import { construireDossier, imprimerDossier } from '../lib/dossier'
+import { capturerPlan } from '../lib/apercuPlan'
 
 export function BarreOutils() {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -35,6 +37,15 @@ export function BarreOutils() {
 
   function surEnregistrer() {
     declencherTelechargement(serialiser(projet), nomFichier(projet))
+  }
+
+  function surExporterDossier() {
+    const html = construireDossier(projet, capturerPlan(), new Date().toISOString())
+    if (!imprimerDossier(html)) {
+      setErreurOuverture("L'impression a été bloquée par le navigateur — autorise les fenêtres surgissantes.")
+    } else {
+      setErreurOuverture(null)
+    }
   }
 
   async function surOuvrir(e: React.ChangeEvent<HTMLInputElement>) {
@@ -74,6 +85,13 @@ export function BarreOutils() {
           Ouvrir…
         </button>
         <input ref={inputProjetRef} type="file" accept=".cuivre,application/json" hidden onChange={surOuvrir} />
+        <button
+          className="btn"
+          onClick={surExporterDossier}
+          title="Dossier imprimable : plan, nomenclature, conformité, tableau et métré (« Enregistrer au format PDF »)"
+        >
+          Dossier PDF…
+        </button>
         {erreurOuverture && <span className="barre-erreur">{erreurOuverture}</span>}
       </div>
 

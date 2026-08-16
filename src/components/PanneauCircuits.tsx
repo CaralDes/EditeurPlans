@@ -1,6 +1,6 @@
 import { useProjectStore } from '../store/useProjectStore'
 import { suggererCircuit } from '../lib/circuits'
-import { circuitDef } from '../regles/moteur'
+import { circuitDef, circuitsEclairageMin } from '../regles/moteur'
 import { resumeCircuits, totauxParSection } from '../lib/metre'
 import { construireSchemaTableau } from '../lib/schemaTableau'
 import { SchemaTableau } from './SchemaTableau'
@@ -19,6 +19,15 @@ export function PanneauCircuits() {
   const tableau = projet.tableaux[0]
   const lignes = resumeCircuits(projet)
   const totaux = totauxParSection(lignes)
+
+  // Les pièces « extérieur » ne comptent pas dans la surface habitable qui déclenche
+  // l'exigence de deux circuits d'éclairage indépendants.
+  const surfaceHabitable = projet.pieces
+    .filter((p) => p.type !== 'exterieur')
+    .reduce((somme, p) => somme + p.surfaceM2, 0)
+  const regleEclairage = circuitsEclairageMin(surfaceHabitable)
+  const circuitsEclairagePoses = projet.circuits.filter((c) => c.famille === 'eclairage').length
+  const eclairageInsuffisant = surfaceHabitable > 0 && circuitsEclairagePoses < regleEclairage.nombre
 
   const selectionLibre = selection.filter((id) => {
     const o = projet.organes.find((x) => x.id === id)
@@ -73,6 +82,12 @@ export function PanneauCircuits() {
             type de différentiel, ou trop de points sur le circuit — survole-la pour le détail.
           </p>
           <SchemaTableau schema={construireSchemaTableau(tableau, projet.circuits)} />
+          {eclairageInsuffisant && (
+            <p className="panneau-alerte">
+              {circuitsEclairagePoses} circuit(s) d'éclairage pour {surfaceHabitable.toFixed(0)} m² habitables,{' '}
+              {regleEclairage.nombre} attendu(s) — {regleEclairage.regle}.
+            </p>
+          )}
         </section>
       )}
 

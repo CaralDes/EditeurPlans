@@ -42,9 +42,12 @@ export function SchemaTableau({ schema }: { schema: SchemaTableauData }) {
                 height={e.hauteur}
                 rx={4}
                 className={`schema-boite${e.alerte ? ' schema-boite-alerte' : ' schema-boite-differentiel'}`}
-              />
+              >
+                {e.alertes.length > 0 && <title>{e.alertes.join(' · ')}</title>}
+              </rect>
               <text x={e.x + e.largeur / 2} y={e.y + e.hauteur / 2} className="schema-texte">
                 {e.libelle}
+                {e.alerte ? ' ⚠' : ''}
               </text>
             </g>
           ))}
