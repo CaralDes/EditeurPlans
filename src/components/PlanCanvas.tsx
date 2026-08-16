@@ -325,9 +325,19 @@ export function PlanCanvas() {
             </>
           )}
 
-          {projet.pieces.map((piece) => (
-            <FacePiece key={piece.id} piece={piece} selectionnee={pieceSelectionnee === piece.id} echelleVue={vue.scale} />
-          ))}
+          {/* Le zonage se dessine par-dessus le calque d'éclairage : sa teinte verte
+              recouvrirait l'ambiance et fausserait le jugement. « Ombres et lumières » sert
+              à voir la lumière, pas le découpage — on masque donc les faces de pièce, sans
+              rien changer aux données. */}
+          {!modeEclairage &&
+            projet.pieces.map((piece) => (
+              <FacePiece
+                key={piece.id}
+                piece={piece}
+                selectionnee={pieceSelectionnee === piece.id}
+                echelleVue={vue.scale}
+              />
+            ))}
 
           {pointsPieceEnCours && pointsPieceEnCours.length > 0 && (
             <>
@@ -533,13 +543,17 @@ function FacePiece({
 }) {
   const centre = pointEtiquette(piece.polygone)
   const libelleSurface = piece.surfaceM2 > 0 ? `${piece.surfaceM2.toFixed(1)} m²` : ''
+  // Une pièce sélectionnée passe au cuivre de sélection, comme les organes et le tableau :
+  // « sélectionné » doit se lire comme tel, pas comme « un peu plus vert ». Le remplissage
+  // au repos reste très discret pour ne pas teinter le fond de plan sous les symboles.
+  const couleur = selectionnee ? COULEUR_SELECTION : COULEUR_PIECE
   return (
     <>
       <Line
         points={aplatir(piece.polygone)}
         closed
-        fill={selectionnee ? `${COULEUR_PIECE}33` : `${COULEUR_PIECE}14`}
-        stroke={COULEUR_PIECE}
+        fill={selectionnee ? `${COULEUR_SELECTION}2b` : `${COULEUR_PIECE}0f`}
+        stroke={couleur}
         strokeWidth={(selectionnee ? 2.5 : 1.3) / echelleVue}
         dash={selectionnee ? undefined : [5 / echelleVue, 4 / echelleVue]}
         listening={false}
@@ -550,7 +564,7 @@ function FacePiece({
         text={`${piece.nom}${libelleSurface ? `\n${libelleSurface}` : ''}`}
         fontSize={13 / echelleVue}
         fontStyle="700"
-        fill={COULEUR_PIECE}
+        fill={couleur}
         align="center"
         offsetX={(piece.nom.length * 4) / echelleVue}
         listening={false}
