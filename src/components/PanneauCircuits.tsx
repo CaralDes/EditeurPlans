@@ -86,6 +86,13 @@ export function PanneauCircuits() {
       <section>
         <h4>Circuits ({lignes.length})</h4>
         {lignes.length === 0 && <p className="panneau-note">Aucun circuit créé pour l'instant.</p>}
+        {lignes.some((l) => l.organesNonCables.length > 0) && (
+          <p className="panneau-note" style={{ marginBottom: 10 }}>
+            Pour qu'un seul câble desserve plusieurs organes non câblés (plusieurs spots en
+            guirlande, par exemple) : sélectionne-les sur le plan (clic + Maj), le bouton de
+            câblage groupé apparaît sous le circuit concerné.
+          </p>
+        )}
         <div className="liste-circuits">
           {lignes.map((ligne) => (
             <div key={ligne.circuit.id} className="carte-circuit">
@@ -106,30 +113,69 @@ export function PanneauCircuits() {
                   scinder en deux.
                 </p>
               )}
+
+              {ligne.cheminements.length > 0 && (
+                <ul className="liste-cables-circuit">
+                  {ligne.cheminements.map((chem) => {
+                    const reperes = chem.organes
+                      .map((oid) => projet.organes.find((o) => o.id === oid)?.repere)
+                      .filter((r): r is string => Boolean(r))
+                      .join(', ')
+                    const enTrainDeRetracer = outil.kind === 'cable' && outil.cheminementId === chem.id
+                    return (
+                      <li key={chem.id}>
+                        <span>
+                          Câble{chem.organes.length > 1 ? ` (×${chem.organes.length})` : ''} → {reperes || '—'}
+                        </span>
+                        <button
+                          className={`btn-lien${enTrainDeRetracer ? ' actif' : ''}`}
+                          disabled={!tableau}
+                          title={tableau ? undefined : "Pose d'abord le tableau"}
+                          onClick={() =>
+                            setOutil({
+                              kind: 'cable',
+                              circuitId: ligne.circuit.id,
+                              organeIds: chem.organes,
+                              mode: chem.mode,
+                              cheminementId: chem.id,
+                            })
+                          }
+                        >
+                          Retracer
+                        </button>
+                        <button className="btn-lien" onClick={() => supprimerCheminement(chem.id)}>
+                          ✕
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+
               <ul className="liste-organes-circuit">
                 {ligne.circuit.organes.map((oid) => {
                   const organe = projet.organes.find((o) => o.id === oid)
                   if (!organe) return null
-                  const cheminement = projet.cheminements.find(
-                    (c) => c.circuitId === ligne.circuit.id && c.deOrgane === oid,
-                  )
-                  const enTrainDeTracer = outil.kind === 'cable' && outil.organeId === oid
+                  const cable = ligne.cheminements.find((c) => c.organes.includes(oid))
+                  const enTrainDeTracer =
+                    outil.kind === 'cable' && !outil.cheminementId && outil.organeIds.length === 1 && outil.organeIds[0] === oid
                   return (
                     <li key={oid}>
                       <span>{organe.repere}</span>
-                      {cheminement && <span className="badge-ok">câblé</span>}
-                      <button
-                        className={`btn-lien${enTrainDeTracer ? ' actif' : ''}`}
-                        disabled={!tableau}
-                        title={tableau ? undefined : "Pose d'abord le tableau"}
-                        onClick={() => setOutil({ kind: 'cable', circuitId: ligne.circuit.id, organeId: oid, mode: 'plafond' })}
-                      >
-                        {cheminement ? 'Retracer' : 'Tracer le câble'}
-                      </button>
-                      {cheminement && (
-                        <button className="btn-lien" onClick={() => supprimerCheminement(cheminement.id)}>
-                          ✕
-                        </button>
+                      {cable ? (
+                        <span className="badge-ok">câblé</span>
+                      ) : (
+                        <>
+                          <span className="badge-manque">non câblé</span>
+                          <button
+                            className={`btn-lien${enTrainDeTracer ? ' actif' : ''}`}
+                            disabled={!tableau}
+                            title={tableau ? undefined : "Pose d'abord le tableau"}
+                            onClick={() => setOutil({ kind: 'cable', circuitId: ligne.circuit.id, organeIds: [oid], mode: 'plafond' })}
+                          >
+                            Tracer seul
+                          </button>
+                        </>
                       )}
                       <button className="btn-lien" onClick={() => retirerOrganeDuCircuit(oid)}>
                         retirer
@@ -138,11 +184,32 @@ export function PanneauCircuits() {
                   )
                 })}
               </ul>
+
+              {(() => {
+                const selectionGroupable = selection.filter((id) => ligne.organesNonCables.includes(id))
+                if (selectionGroupable.length < 2 || !tableau) return null
+                return (
+                  <div className="cablage-groupe">
+                    <p className="panneau-note">
+                      {selectionGroupable.length} organe(s) non câblé(s) sélectionné(s) sur le plan.
+                    </p>
+                    <button
+                      className="btn btn-accent"
+                      onClick={() =>
+                        setOutil({ kind: 'cable', circuitId: ligne.circuit.id, organeIds: selectionGroupable, mode: 'plafond' })
+                      }
+                    >
+                      Tracer un seul câble pour ces {selectionGroupable.length} organes
+                    </button>
+                  </div>
+                )
+              })()}
+
               <p className="panneau-note">
                 {ligne.longueurTotaleM !== null
                   ? `Longueur totale estimée : ${ligne.longueurTotaleM.toFixed(1)} m`
                   : ligne.cablesManquants > 0
-                    ? `${ligne.cablesManquants} câble(s) restant(s) à tracer`
+                    ? `${ligne.cablesManquants} organe(s) restant(s) à câbler`
                     : "l'échelle du plan n'est pas calée"}
               </p>
             </div>

@@ -129,7 +129,10 @@ export interface Cheminement {
   circuitId: string
   mode: ModeCheminement
   points: Point[]
-  deOrgane: string
+  // Organes desservis par ce câble. Un câble peut desservir plusieurs organes d'un même
+  // circuit en chaîne (ex. plusieurs spots reliés en guirlande) au lieu d'imposer un
+  // aller-retour au tableau par organe.
+  organes: string[]
   versNoeud: string // id d'un organe tableau ou "TAB"
 }
 

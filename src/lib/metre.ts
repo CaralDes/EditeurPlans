@@ -1,4 +1,4 @@
-import type { Circuit, Organe, Projet } from '../types'
+import type { Cheminement, Circuit, Organe, Projet } from '../types'
 import { circuitDef, typeDifferentielRequis } from '../regles/moteur'
 import { longueurCableM } from './cable'
 
@@ -6,6 +6,8 @@ export interface LigneCircuit {
   circuit: Circuit
   libelleRegle: string | null
   organesCount: number
+  cheminements: Cheminement[] // câbles physiques tracés pour ce circuit — un câble peut desservir plusieurs organes
+  organesNonCables: string[] // organes du circuit non encore desservis par un câble
   cablesTraces: number
   cablesManquants: number
   longueurTotaleM: number | null // null si un câble manque ou si l'échelle n'est pas calée
@@ -28,20 +30,22 @@ export function resumeCircuits(projet: Projet): LigneCircuit[] {
   return projet.circuits.map((circuit) => {
     const def = circuit.regleId ? circuitDef(circuit.regleId) : undefined
     const cheminementsDuCircuit = projet.cheminements.filter((c) => c.circuitId === circuit.id)
+    const organesCablesIds = new Set(cheminementsDuCircuit.flatMap((c) => c.organes))
+    const organesNonCables = circuit.organes.filter((oid) => !organesCablesIds.has(oid))
     const cablesTraces = cheminementsDuCircuit.length
-    const cablesManquants = Math.max(0, circuit.organes.length - cablesTraces)
+    const cablesManquants = organesNonCables.length
 
     let longueurTotaleM: number | null = cablesManquants > 0 || !tableau ? null : 0
     if (longueurTotaleM === 0) {
       for (const cheminement of cheminementsDuCircuit) {
-        const organe = organesParId.get(cheminement.deOrgane) as Organe | undefined
-        if (!organe || !tableau) {
+        const hauteursOrganesM = cheminement.organes.map((oid) => (organesParId.get(oid) as Organe | undefined)?.hauteurM)
+        if (!tableau || hauteursOrganesM.some((h) => h === undefined)) {
           longueurTotaleM = null
           break
         }
         const longueur = longueurCableM(
           cheminement,
-          organe.hauteurM,
+          hauteursOrganesM as number[],
           tableau.hauteurM,
           projet.plan.hauteurSousPlafond,
           projet.plan.echelle,
@@ -60,6 +64,8 @@ export function resumeCircuits(projet: Projet): LigneCircuit[] {
       circuit,
       libelleRegle: def?.libelle ?? null,
       organesCount: circuit.organes.length,
+      cheminements: cheminementsDuCircuit,
+      organesNonCables,
       cablesTraces,
       cablesManquants,
       longueurTotaleM,

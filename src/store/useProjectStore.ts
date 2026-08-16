@@ -3,6 +3,7 @@ import { SYMBOL_META, type Calque, CALQUES_ORDRE } from '../symbols/meta'
 import { prochainRepere } from '../lib/reperes'
 import { calculerEchelle } from '../lib/echelle'
 import { suggererCircuit } from '../lib/circuits'
+import { migrerCheminements } from '../lib/cable'
 import { idUnique } from '../lib/id'
 import { paramsParDefaut } from '../lib/lumiere'
 import { avecAppartenancesRecalculees, surfaceCalculee } from '../lib/pieces'
@@ -27,7 +28,7 @@ export type Outil =
   | { kind: 'calibrer' }
   | { kind: 'poser'; type: TypeOrgane }
   | { kind: 'tableau'; type: 'principal' | 'divisionnaire' }
-  | { kind: 'cable'; circuitId: string; organeId: string; mode: ModeCheminement }
+  | { kind: 'cable'; circuitId: string; organeIds: string[]; mode: ModeCheminement; cheminementId?: string }
   | { kind: 'piece' }
 
 interface ProjectState {
@@ -111,6 +112,15 @@ function commit(set: (fn: (s: ProjectState) => Partial<ProjectState>) => void, g
   }))
 }
 
+// Retire ces organes de tout câble qui les desservait. Un câble peut desservir plusieurs
+// organes (guirlande) : retirer l'un d'eux ne supprime le cheminement que s'il ne dessert
+// plus personne — les autres organes de la même chaîne restent câblés.
+function sansOrganesDesCheminements(cheminements: Cheminement[], idsRetires: Set<string>): Cheminement[] {
+  return cheminements
+    .map((c) => ({ ...c, organes: c.organes.filter((id) => !idsRetires.has(id)) }))
+    .filter((c) => c.organes.length > 0)
+}
+
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projet: projetVide('Extension'),
   selection: [],
@@ -136,7 +146,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   // de l'auto-sauvegarde) : repart d'un historique vierge, pas d'un commit incrémental.
   chargerProjet: (projet) => {
     set({
-      projet,
+      projet: { ...projet, cheminements: migrerCheminements(projet.cheminements) },
       selection: [],
       outil: { kind: 'select' },
       pointCalibration: null,
@@ -228,7 +238,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       ...p,
       organes: p.organes.filter((o) => !idSet.has(o.id)),
       circuits: p.circuits.map((c) => ({ ...c, organes: c.organes.filter((id) => !idSet.has(id)) })),
-      cheminements: p.cheminements.filter((c) => !idSet.has(c.deOrgane)),
+      cheminements: sansOrganesDesCheminements(p.cheminements, idSet),
     })
     set({ selection: [] })
   },
@@ -329,7 +339,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       // obsolète) et abandonne leur éventuel câble tracé : il appartenait à l'ancien circuit.
       circuits: [...p.circuits.map((c) => ({ ...c, organes: c.organes.filter((oid) => !idSet.has(oid)) })), circuit],
       organes: p.organes.map((o) => (idSet.has(o.id) ? { ...o, circuitId: id } : o)),
-      cheminements: p.cheminements.filter((c) => !idSet.has(c.deOrgane)),
+      cheminements: sansOrganesDesCheminements(p.cheminements, idSet),
     })
     set({ selection: [] })
     return id
@@ -356,7 +366,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       circuits: p.circuits.map((c) =>
         c.id === circuitId ? { ...c, organes: c.organes.filter((id) => id !== organeId) } : c,
       ),
-      cheminements: p.cheminements.filter((c) => c.deOrgane !== organeId),
+      cheminements: sansOrganesDesCheminements(p.cheminements, new Set([organeId])),
     })
   },
 
@@ -385,22 +395,30 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       set({ pointsCableEnCours: null })
       return
     }
-    const { circuitId, organeId, mode } = s.outil
+    const { circuitId, organeIds, mode, cheminementId } = s.outil
+    if (organeIds.length === 0) {
+      set({ pointsCableEnCours: null, outil: { kind: 'select' } })
+      return
+    }
     const tableau = s.projet.tableaux[0]
     const p = s.projet
     const cheminement: Cheminement = {
-      id: idUnique('cable'),
+      id: cheminementId ?? idUnique('cable'),
       circuitId,
       mode,
       points: s.pointsCableEnCours,
-      deOrgane: organeId,
+      organes: organeIds,
       versNoeud: tableau?.id ?? 'TAB',
     }
-    // Un nouveau tracé remplace l'éventuel câble déjà posé pour ce même organe sur ce circuit.
+    // Un nouveau tracé remplace le cheminement retracé (même id), ou tout cheminement qui
+    // desservirait déjà l'un des organes choisis — le regroupement leur affecte ce câble.
+    const organeIdSet = new Set(organeIds)
     commit(set, get, {
       ...p,
       cheminements: [
-        ...p.cheminements.filter((c) => !(c.circuitId === circuitId && c.deOrgane === organeId)),
+        ...p.cheminements.filter(
+          (c) => c.id !== cheminement.id && !(c.circuitId === circuitId && c.organes.some((oid) => organeIdSet.has(oid))),
+        ),
         cheminement,
       ],
     })

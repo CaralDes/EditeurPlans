@@ -88,14 +88,14 @@ describe('tracé de câble', () => {
     const idOrgane = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
     const idCircuit = useProjectStore.getState().creerCircuit([idOrgane])
 
-    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeId: idOrgane, mode: 'plafond' })
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idOrgane], mode: 'plafond' })
     useProjectStore.getState().clicCable({ x: 10, y: 10 })
     useProjectStore.getState().clicCable({ x: 500, y: 500 })
     useProjectStore.getState().finaliserCable()
 
     const cheminements = useProjectStore.getState().projet.cheminements
     expect(cheminements).toHaveLength(1)
-    expect(cheminements[0]!.deOrgane).toBe(idOrgane)
+    expect(cheminements[0]!.organes).toEqual([idOrgane])
     expect(cheminements[0]!.circuitId).toBe(idCircuit)
     expect(cheminements[0]!.versNoeud).toBe(idTableau)
     expect(useProjectStore.getState().outil.kind).toBe('select')
@@ -104,7 +104,7 @@ describe('tracé de câble', () => {
   it('annulerCable ne produit aucun cheminement', () => {
     const idOrgane = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
     const idCircuit = useProjectStore.getState().creerCircuit([idOrgane])
-    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeId: idOrgane, mode: 'plafond' })
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idOrgane], mode: 'plafond' })
     useProjectStore.getState().clicCable({ x: 10, y: 10 })
     useProjectStore.getState().annulerCable()
     expect(useProjectStore.getState().projet.cheminements).toHaveLength(0)
@@ -115,12 +115,12 @@ describe('tracé de câble', () => {
     const idOrgane = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
     const idCircuit = useProjectStore.getState().creerCircuit([idOrgane])
 
-    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeId: idOrgane, mode: 'plafond' })
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idOrgane], mode: 'plafond' })
     useProjectStore.getState().clicCable({ x: 10, y: 10 })
     useProjectStore.getState().clicCable({ x: 200, y: 200 })
     useProjectStore.getState().finaliserCable()
 
-    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeId: idOrgane, mode: 'sol' })
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idOrgane], mode: 'sol' })
     useProjectStore.getState().clicCable({ x: 10, y: 10 })
     useProjectStore.getState().clicCable({ x: 500, y: 500 })
     useProjectStore.getState().finaliserCable()
@@ -134,7 +134,7 @@ describe('tracé de câble', () => {
     useProjectStore.getState().poserTableau('divisionnaire', 500, 500)
     const idOrgane = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
     const idCircuit = useProjectStore.getState().creerCircuit([idOrgane])
-    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeId: idOrgane, mode: 'plafond' })
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idOrgane], mode: 'plafond' })
     useProjectStore.getState().clicCable({ x: 10, y: 10 })
     useProjectStore.getState().clicCable({ x: 500, y: 500 })
     useProjectStore.getState().finaliserCable()
@@ -144,5 +144,78 @@ describe('tracé de câble', () => {
     const { circuits, cheminements } = useProjectStore.getState().projet
     expect(cheminements).toHaveLength(0)
     expect(circuits.find((c) => c.id === idCircuit)!.organes).not.toContain(idOrgane)
+  })
+
+  it('un seul câble peut desservir plusieurs organes du même circuit (guirlande de spots)', () => {
+    useProjectStore.getState().poserTableau('divisionnaire', 500, 500)
+    const idSpot1 = useProjectStore.getState().ajouterOrgane('spot', 10, 10)
+    const idSpot2 = useProjectStore.getState().ajouterOrgane('spot', 60, 10)
+    const idSpot3 = useProjectStore.getState().ajouterOrgane('spot', 110, 10)
+    const idCircuit = useProjectStore.getState().creerCircuit([idSpot1, idSpot2, idSpot3])
+
+    useProjectStore.getState().setOutil({
+      kind: 'cable',
+      circuitId: idCircuit,
+      organeIds: [idSpot1, idSpot2, idSpot3],
+      mode: 'plafond',
+    })
+    useProjectStore.getState().clicCable({ x: 10, y: 10 })
+    useProjectStore.getState().clicCable({ x: 110, y: 10 })
+    useProjectStore.getState().clicCable({ x: 500, y: 500 })
+    useProjectStore.getState().finaliserCable()
+
+    const cheminements = useProjectStore.getState().projet.cheminements
+    expect(cheminements).toHaveLength(1)
+    expect(cheminements[0]!.organes).toEqual([idSpot1, idSpot2, idSpot3])
+    expect(useProjectStore.getState().outil.kind).toBe('select')
+  })
+
+  it('retracer un câble groupé (via cheminementId) remplace le même câble sans le dupliquer', () => {
+    useProjectStore.getState().poserTableau('divisionnaire', 500, 500)
+    const idSpot1 = useProjectStore.getState().ajouterOrgane('spot', 10, 10)
+    const idSpot2 = useProjectStore.getState().ajouterOrgane('spot', 60, 10)
+    const idCircuit = useProjectStore.getState().creerCircuit([idSpot1, idSpot2])
+
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idSpot1, idSpot2], mode: 'plafond' })
+    useProjectStore.getState().clicCable({ x: 10, y: 10 })
+    useProjectStore.getState().clicCable({ x: 500, y: 500 })
+    useProjectStore.getState().finaliserCable()
+    const idCable = useProjectStore.getState().projet.cheminements[0]!.id
+
+    useProjectStore.getState().setOutil({
+      kind: 'cable',
+      circuitId: idCircuit,
+      organeIds: [idSpot1, idSpot2],
+      mode: 'sol',
+      cheminementId: idCable,
+    })
+    useProjectStore.getState().clicCable({ x: 10, y: 10 })
+    useProjectStore.getState().clicCable({ x: 500, y: 500 })
+    useProjectStore.getState().finaliserCable()
+
+    const cheminements = useProjectStore.getState().projet.cheminements
+    expect(cheminements).toHaveLength(1)
+    expect(cheminements[0]!.id).toBe(idCable)
+    expect(cheminements[0]!.mode).toBe('sol')
+    expect(cheminements[0]!.organes).toEqual([idSpot1, idSpot2])
+  })
+
+  it('supprimer un seul organe desservi par un câble groupé le détache sans supprimer le câble des autres', () => {
+    useProjectStore.getState().poserTableau('divisionnaire', 500, 500)
+    const idSpot1 = useProjectStore.getState().ajouterOrgane('spot', 10, 10)
+    const idSpot2 = useProjectStore.getState().ajouterOrgane('spot', 60, 10)
+    const idCircuit = useProjectStore.getState().creerCircuit([idSpot1, idSpot2])
+
+    useProjectStore.getState().setOutil({ kind: 'cable', circuitId: idCircuit, organeIds: [idSpot1, idSpot2], mode: 'plafond' })
+    useProjectStore.getState().clicCable({ x: 10, y: 10 })
+    useProjectStore.getState().clicCable({ x: 500, y: 500 })
+    useProjectStore.getState().finaliserCable()
+
+    useProjectStore.getState().supprimerOrganes([idSpot1])
+
+    const { cheminements, circuits } = useProjectStore.getState().projet
+    expect(cheminements).toHaveLength(1)
+    expect(cheminements[0]!.organes).toEqual([idSpot2])
+    expect(circuits.find((c) => c.id === idCircuit)!.organes).toEqual([idSpot2])
   })
 })

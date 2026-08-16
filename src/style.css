@@ -517,6 +517,48 @@ textarea {
   background: #f7e6e2;
 }
 
+.liste-cables-circuit {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.liste-cables-circuit li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--sunk);
+}
+.liste-cables-circuit li > span:first-child {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liste-cables-circuit .btn-lien {
+  margin-left: 0;
+  font-size: 11.5px;
+  flex-shrink: 0;
+}
+.liste-cables-circuit .btn-lien.actif {
+  color: var(--accent);
+  font-weight: 700;
+}
+.cablage-groupe {
+  border: 1px dashed var(--accent);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.cablage-groupe p {
+  margin: 0 0 6px;
+}
+
 .carte-piece {
   cursor: pointer;
 }
