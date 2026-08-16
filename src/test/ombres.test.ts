@@ -82,4 +82,67 @@ describe('polygoneVisibilite', () => {
     }
     expect(echappes.length).toBeGreaterThan(0) // au moins un rayon passe bien par le trou
   })
+
+  // Régression : un mur en plusieurs segments (tracé le long de vrais murs, avec des
+  // coins) pouvait laisser passer de fines « raies » de lumière qui traversaient le mur.
+  // Deux causes distinctes, toutes deux corrigées :
+  //  1. sans raffinement adaptatif, l'arête reliant un point proche (contre le mur) à un
+  //     point lointain (rayon max, juste après l'extrémité exposée du mur) coupait tout
+  //     droit à travers ce qui devait rester dans l'ombre ;
+  //  2. les rayons de la grille régulière étaient générés dans [0, 2π) alors que les
+  //     rayons visant les coins de mur (Math.atan2) sont dans (-π, π] : une fois triés
+  //     ensemble, tout un demi-cercle se retrouvait mal ordonné.
+  it('un mur à plusieurs coins ne laisse fuir aucun large biseau de lumière (non-régression)', () => {
+    const origine = { x: 250, y: 250 }
+    const segments = mursEnSegments([
+      {
+        id: 'baionnette',
+        epaisseurM: 0.1,
+        points: [
+          { x: 100, y: 50 },
+          { x: 300, y: 60 },
+          { x: 320, y: 200 },
+          { x: 500, y: 210 },
+          { x: 520, y: 400 },
+        ],
+      },
+    ])
+    const rayonMax = 400
+    const polygone = polygoneVisibilite(origine, segments, rayonMax)
+
+    for (let i = 0; i < polygone.length; i++) {
+      const p1 = polygone[i]!
+      const p2 = polygone[(i + 1) % polygone.length]!
+      const a1 = Math.atan2(p1.y - origine.y, p1.x - origine.x)
+      const a2 = Math.atan2(p2.y - origine.y, p2.x - origine.x)
+      let largeurAngle = Math.abs(a2 - a1)
+      if (largeurAngle > Math.PI) largeurAngle = 2 * Math.PI - largeurAngle
+      const largeurPx = largeurAngle * Math.max(distance(origine, p1), distance(origine, p2))
+      if (largeurPx <= 1) continue // biseau trop fin pour être visible, sans conséquence
+
+      // Pour toute arête visuellement large, ses points échantillonnés ne doivent pas
+      // dépasser la distance réellement libre à cet angle (calculée indépendamment).
+      for (let f = 0.1; f < 1; f += 0.1) {
+        const mx = p1.x + (p2.x - p1.x) * f
+        const my = p1.y + (p2.y - p1.y) * f
+        const angle = Math.atan2(my - origine.y, mx - origine.x)
+        const distReelle = distance(origine, { x: mx, y: my })
+
+        let distVraie = rayonMax
+        for (const seg of segments) {
+          const sx = seg.b.x - seg.a.x
+          const sy = seg.b.y - seg.a.y
+          const dx = Math.cos(angle)
+          const dy = Math.sin(angle)
+          const denom = sx * dy - sy * dx
+          if (Math.abs(denom) < 1e-9) continue
+          const t = (sx * (seg.a.y - origine.y) - sy * (seg.a.x - origine.x)) / denom
+          const u = (dx * (seg.a.y - origine.y) - dy * (seg.a.x - origine.x)) / denom
+          if (t >= 0 && u >= 0 && u <= 1 && t < distVraie) distVraie = t
+        }
+
+        expect(distReelle).toBeLessThanOrEqual(distVraie + 1.5)
+      }
+    }
+  })
 })
