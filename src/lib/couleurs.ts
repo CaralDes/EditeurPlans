@@ -9,3 +9,4 @@ export const COULEUR_ELECTRICITE_SUR_ACCENT = '#ffffff' // symbole actif dans la
 
 export const COULEUR_SELECTION = '#9a5f26' // reprend --accent : distingue la sélection du bleu électricité
 export const COULEUR_CABLE_EN_COURS = '#c94f3a' // tracé provisoire / point de calibration
+export const COULEUR_PIECE = '#3d7a5c' // vert sourd : distinct du bleu électricité et du cuivre de sélection

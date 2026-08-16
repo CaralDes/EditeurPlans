@@ -498,15 +498,44 @@ textarea {
   color: var(--accent);
   font-weight: 700;
 }
-.badge-ok {
+.badge-ok,
+.badge-manque {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #2f7a3d;
-  background: #e3f3e6;
   border-radius: 3px;
   padding: 1px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.badge-ok {
+  color: #2f7a3d;
+  background: #e3f3e6;
+}
+.badge-manque {
+  color: var(--danger);
+  background: #f7e6e2;
+}
+
+.carte-piece {
+  cursor: pointer;
+}
+.carte-piece.carte-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.champ-nom-piece {
+  font-size: 13.5px;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+.champ-nom-piece:focus {
+  outline: none;
+  background: var(--sunk);
 }
 
 .table-metre {

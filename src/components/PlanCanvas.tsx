@@ -1,16 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { Circle, Group, Image as KonvaImage, Layer, Line, Stage } from 'react-konva'
+import { Circle, Group, Image as KonvaImage, Layer, Line, Stage, Text } from 'react-konva'
 import { useProjectStore } from '../store/useProjectStore'
 import { useHtmlImage } from '../lib/useHtmlImage'
 import { Symbole } from './Symbole'
 import { SYMBOL_DEFS } from '../symbols/definitions'
-import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_SELECTION } from '../lib/couleurs'
+import { COULEUR_CABLE_EN_COURS, COULEUR_ELECTRICITE, COULEUR_PIECE, COULEUR_SELECTION } from '../lib/couleurs'
 import { cibleLaPlusProche, type Cible } from '../lib/cibles'
+import { centreEtiquette } from '../lib/pieces'
 import { nappesLumineuses } from '../lib/lumiere'
 import { CalqueEclairage } from './CalqueEclairage'
-import type { ModeCheminement, Point, TypeOrgane } from '../types'
+import type { ModeCheminement, Piece, Point, TypeOrgane } from '../types'
 
 const ZOOM_MIN = 0.15
 const ZOOM_MAX = 8
@@ -66,6 +67,11 @@ export function PlanCanvas() {
   const annulerCable = useProjectStore((s) => s.annulerCable)
   const modeEclairage = useProjectStore((s) => s.modeEclairage)
   const intensiteNuit = useProjectStore((s) => s.intensiteNuit)
+  const clicPiece = useProjectStore((s) => s.clicPiece)
+  const pointsPieceEnCours = useProjectStore((s) => s.pointsPieceEnCours)
+  const finaliserPiece = useProjectStore((s) => s.finaliserPiece)
+  const annulerPiece = useProjectStore((s) => s.annulerPiece)
+  const pieceSelectionnee = useProjectStore((s) => s.pieceSelectionnee)
 
   const image = useHtmlImage(projet.plan.image)
 
@@ -148,6 +154,10 @@ export function PlanCanvas() {
       clicCable(p)
       return
     }
+    if (outil.kind === 'piece') {
+      clicPiece(p)
+      return
+    }
 
     // Mode sélection : on retient l'organe le plus proche du curseur, pas celui que la
     // détection de collision de Konva aurait désigné (voir lib/cibles.ts).
@@ -219,7 +229,11 @@ export function PlanCanvas() {
   const echelle = projet.plan.echelle
   const scaleTexte = echelle ? `${echelle.pxParMetre.toFixed(1)} px/m — calé sur ${echelle.coteSur}` : 'échelle non calée'
   const curseur =
-    outil.kind === 'poser' || outil.kind === 'calibrer' || outil.kind === 'tableau' || outil.kind === 'cable'
+    outil.kind === 'poser' ||
+    outil.kind === 'calibrer' ||
+    outil.kind === 'tableau' ||
+    outil.kind === 'cable' ||
+    outil.kind === 'piece'
       ? 'crosshair'
       : survole
         ? 'move'
@@ -271,6 +285,29 @@ export function PlanCanvas() {
         )}
 
         <Layer>
+          {projet.pieces.map((piece) => (
+            <FacePiece key={piece.id} piece={piece} selectionnee={pieceSelectionnee === piece.id} echelleVue={vue.scale} />
+          ))}
+
+          {pointsPieceEnCours && pointsPieceEnCours.length > 0 && (
+            <>
+              <Line
+                points={aplatir(pointsPieceEnCours)}
+                stroke={COULEUR_PIECE}
+                strokeWidth={2 / vue.scale}
+                dash={[6 / vue.scale, 4 / vue.scale]}
+                lineCap="round"
+                lineJoin="round"
+                closed={pointsPieceEnCours.length > 2}
+                fill={pointsPieceEnCours.length > 2 ? `${COULEUR_PIECE}22` : undefined}
+                listening={false}
+              />
+              {pointsPieceEnCours.map((p, i) => (
+                <Circle key={i} x={p.x} y={p.y} radius={4 / vue.scale} fill={COULEUR_PIECE} listening={false} />
+              ))}
+            </>
+          )}
+
           {projet.cheminements.map((c) => (
             <Line
               key={c.id}
@@ -392,7 +429,62 @@ export function PlanCanvas() {
           </button>
         </div>
       )}
+
+      {outil.kind === 'piece' && (
+        <div className="hud-instruction">
+          <span>
+            Clique les coins de la pièce ({(pointsPieceEnCours ?? []).length}/3 min), puis « Terminer » (ou Entrée).
+          </span>
+          <button
+            className="btn-lien"
+            disabled={(pointsPieceEnCours ?? []).length < 3}
+            onClick={() => finaliserPiece()}
+          >
+            Terminer
+          </button>
+          <button className="btn-lien" onClick={() => annulerPiece()}>
+            Annuler
+          </button>
+        </div>
+      )}
     </div>
+  )
+}
+
+function FacePiece({
+  piece,
+  selectionnee,
+  echelleVue,
+}: {
+  piece: Piece
+  selectionnee: boolean
+  echelleVue: number
+}) {
+  const centre = centreEtiquette(piece.polygone)
+  const libelleSurface = piece.surfaceM2 > 0 ? `${piece.surfaceM2.toFixed(1)} m²` : ''
+  return (
+    <>
+      <Line
+        points={aplatir(piece.polygone)}
+        closed
+        fill={selectionnee ? `${COULEUR_PIECE}33` : `${COULEUR_PIECE}14`}
+        stroke={COULEUR_PIECE}
+        strokeWidth={(selectionnee ? 2.5 : 1.3) / echelleVue}
+        dash={selectionnee ? undefined : [5 / echelleVue, 4 / echelleVue]}
+        listening={false}
+      />
+      <Text
+        x={centre.x}
+        y={centre.y}
+        text={`${piece.nom}${libelleSurface ? `\n${libelleSurface}` : ''}`}
+        fontSize={13 / echelleVue}
+        fontStyle="700"
+        fill={COULEUR_PIECE}
+        align="center"
+        offsetX={(piece.nom.length * 4) / echelleVue}
+        listening={false}
+      />
+    </>
   )
 }
 

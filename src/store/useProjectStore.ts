@@ -5,6 +5,7 @@ import { calculerEchelle } from '../lib/echelle'
 import { suggererCircuit } from '../lib/circuits'
 import { idUnique } from '../lib/id'
 import { paramsParDefaut } from '../lib/lumiere'
+import { avecAppartenancesRecalculees, surfaceCalculee } from '../lib/pieces'
 import { circuitDef, hauteurRecommandee, typeDifferentielRequis } from '../regles/moteur'
 import {
   projetVide,
@@ -13,10 +14,12 @@ import {
   type FamilleCircuit,
   type ModeCheminement,
   type Organe,
+  type Piece,
   type Point,
   type Projet,
   type Tableau,
   type TypeOrgane,
+  type TypePiece,
 } from '../types'
 
 export type Outil =
@@ -25,6 +28,7 @@ export type Outil =
   | { kind: 'poser'; type: TypeOrgane }
   | { kind: 'tableau'; type: 'principal' | 'divisionnaire' }
   | { kind: 'cable'; circuitId: string; organeId: string; mode: ModeCheminement }
+  | { kind: 'piece' }
 
 interface ProjectState {
   projet: Projet
@@ -39,6 +43,8 @@ interface ProjectState {
   pointCalibration: Point | null // premier clic en attente du second, en mode 'calibrer'
   distanceEnAttente: { a: Point; b: Point } | null // deux points posés, en attente de la saisie de distance
   pointsCableEnCours: Point[] | null // tracé en cours, en mode 'cable'
+  pointsPieceEnCours: Point[] | null // contour en cours, en mode 'piece'
+  pieceSelectionnee: string | null // pilotée depuis le panneau Pièces, pas depuis le plan
 
   past: Projet[]
   future: Projet[]
@@ -82,6 +88,14 @@ interface ProjectState {
   annulerCable: () => void
   supprimerCheminement: (id: string) => void
 
+  clicPiece: (p: Point) => void
+  finaliserPiece: () => string
+  annulerPiece: () => void
+  renommerPiece: (id: string, nom: string) => void
+  changerTypePiece: (id: string, type: TypePiece) => void
+  supprimerPiece: (id: string) => void
+  setPieceSelectionnee: (id: string | null) => void
+
   undo: () => void
   redo: () => void
 }
@@ -107,6 +121,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   pointCalibration: null,
   distanceEnAttente: null,
   pointsCableEnCours: null,
+  pointsPieceEnCours: null,
+  pieceSelectionnee: null,
 
   past: [],
   future: [],
@@ -126,6 +142,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       pointCalibration: null,
       distanceEnAttente: null,
       pointsCableEnCours: null,
+      pointsPieceEnCours: null,
+      pieceSelectionnee: null,
       past: [],
       future: [],
     })
@@ -142,7 +160,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   setOutil: (outil) =>
-    set({ outil, pointCalibration: null, distanceEnAttente: null, pointsCableEnCours: null }),
+    set({ outil, pointCalibration: null, distanceEnAttente: null, pointsCableEnCours: null, pointsPieceEnCours: null }),
 
   clicCalibration: (point) => {
     const { pointCalibration } = get()
@@ -183,14 +201,19 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       note: '',
       ...paramsParDefaut(type),
     }
-    commit(set, get, { ...p, organes: [...p.organes, organe] })
+    // Rattache immédiatement l'organe à la pièce dont le contour le contient, s'il y en a une.
+    commit(set, get, avecAppartenancesRecalculees({ ...p, organes: [...p.organes, organe] }))
     set({ selection: [id] })
     return id
   },
 
   deplacerOrgane: (id, x, y) => {
     const p = get().projet
-    commit(set, get, { ...p, organes: p.organes.map((o) => (o.id === id ? { ...o, x, y } : o)) })
+    commit(
+      set,
+      get,
+      avecAppartenancesRecalculees({ ...p, organes: p.organes.map((o) => (o.id === id ? { ...o, x, y } : o)) }),
+    )
   },
 
   updateOrgane: (id, patch) => {
@@ -227,7 +250,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         repere: prochainRepere([...p.organes, ...copies], o.type),
       })
     }
-    commit(set, get, { ...p, organes: [...p.organes, ...copies] })
+    commit(set, get, avecAppartenancesRecalculees({ ...p, organes: [...p.organes, ...copies] }))
     set({ selection: copies.map((c) => c.id) })
   },
 
@@ -390,6 +413,53 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const p = get().projet
     commit(set, get, { ...p, cheminements: p.cheminements.filter((c) => c.id !== id) })
   },
+
+  clicPiece: (point) => {
+    const s = get()
+    if (s.outil.kind !== 'piece') return
+    set({ pointsPieceEnCours: [...(s.pointsPieceEnCours ?? []), point] })
+  },
+
+  finaliserPiece: () => {
+    const s = get()
+    if (!s.pointsPieceEnCours || s.pointsPieceEnCours.length < 3) {
+      set({ pointsPieceEnCours: null })
+      return ''
+    }
+    const p = s.projet
+    const id = idUnique('piece')
+    const polygone = s.pointsPieceEnCours
+    const piece: Piece = {
+      id,
+      nom: `Pièce ${p.pieces.length + 1}`,
+      type: 'autre',
+      polygone,
+      surfaceM2: surfaceCalculee(polygone, p),
+    }
+    commit(set, get, avecAppartenancesRecalculees({ ...p, pieces: [...p.pieces, piece] }))
+    set({ pointsPieceEnCours: null, outil: { kind: 'select' }, pieceSelectionnee: id })
+    return id
+  },
+
+  annulerPiece: () => set({ pointsPieceEnCours: null, outil: { kind: 'select' } }),
+
+  renommerPiece: (id, nom) => {
+    const p = get().projet
+    commit(set, get, { ...p, pieces: p.pieces.map((pc) => (pc.id === id ? { ...pc, nom } : pc)) })
+  },
+
+  changerTypePiece: (id, type) => {
+    const p = get().projet
+    commit(set, get, { ...p, pieces: p.pieces.map((pc) => (pc.id === id ? { ...pc, type } : pc)) })
+  },
+
+  supprimerPiece: (id) => {
+    const p = get().projet
+    commit(set, get, avecAppartenancesRecalculees({ ...p, pieces: p.pieces.filter((pc) => pc.id !== id) }))
+    set((s) => ({ pieceSelectionnee: s.pieceSelectionnee === id ? null : s.pieceSelectionnee }))
+  },
+
+  setPieceSelectionnee: (id) => set({ pieceSelectionnee: id }),
 
   undo: () => {
     const s = get()

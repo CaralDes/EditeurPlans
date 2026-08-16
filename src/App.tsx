@@ -4,11 +4,12 @@ import { Palette } from './components/Palette'
 import { PlanCanvas } from './components/PlanCanvas'
 import { PanneauProprietes } from './components/PanneauProprietes'
 import { PanneauCircuits } from './components/PanneauCircuits'
+import { PanneauPieces } from './components/PanneauPieces'
 import { DialogueEchelle } from './components/DialogueEchelle'
 import { useProjectStore } from './store/useProjectStore'
 import { useAutosave } from './lib/useAutosave'
 
-type Onglet = 'proprietes' | 'circuits'
+type Onglet = 'proprietes' | 'pieces' | 'circuits'
 
 export default function App() {
   useAutosave()
@@ -19,6 +20,7 @@ export default function App() {
   const dupliquerOrganes = useProjectStore((s) => s.dupliquerOrganes)
   const setOutil = useProjectStore((s) => s.setOutil)
   const finaliserCable = useProjectStore((s) => s.finaliserCable)
+  const finaliserPiece = useProjectStore((s) => s.finaliserPiece)
   const undo = useProjectStore((s) => s.undo)
   const redo = useProjectStore((s) => s.redo)
 
@@ -29,6 +31,7 @@ export default function App() {
 
       if (e.key === 'Escape') setOutil({ kind: 'select' })
       else if (e.key === 'Enter' && outil.kind === 'cable') finaliserCable()
+      else if (e.key === 'Enter' && outil.kind === 'piece') finaliserPiece()
       else if ((e.key === 'Delete' || e.key === 'Backspace') && selection.length > 0) supprimerOrganes(selection)
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd' && selection.length > 0) {
         e.preventDefault()
@@ -41,7 +44,7 @@ export default function App() {
     }
     window.addEventListener('keydown', surTouche)
     return () => window.removeEventListener('keydown', surTouche)
-  }, [selection, outil, supprimerOrganes, dupliquerOrganes, setOutil, finaliserCable, undo, redo])
+  }, [selection, outil, supprimerOrganes, dupliquerOrganes, setOutil, finaliserCable, finaliserPiece, undo, redo])
 
   return (
     <div className="app">
@@ -58,11 +61,16 @@ export default function App() {
             <button className={`onglet${onglet === 'proprietes' ? ' actif' : ''}`} onClick={() => setOnglet('proprietes')}>
               Propriétés
             </button>
+            <button className={`onglet${onglet === 'pieces' ? ' actif' : ''}`} onClick={() => setOnglet('pieces')}>
+              Pièces
+            </button>
             <button className={`onglet${onglet === 'circuits' ? ' actif' : ''}`} onClick={() => setOnglet('circuits')}>
               Circuits & câblage
             </button>
           </div>
-          {onglet === 'proprietes' ? <PanneauProprietes /> : <PanneauCircuits />}
+          {onglet === 'proprietes' && <PanneauProprietes />}
+          {onglet === 'pieces' && <PanneauPieces />}
+          {onglet === 'circuits' && <PanneauCircuits />}
         </aside>
       </div>
       <DialogueEchelle />
