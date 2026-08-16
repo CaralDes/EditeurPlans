@@ -1,10 +1,11 @@
-import type { Echelle, Organe, TypeOrgane } from '../types'
+import type { Echelle, Mur, Organe, Point, TypeOrgane } from '../types'
 import { metresVersPx } from './echelle'
+import { mursEnSegments, polygoneVisibilite, type Segment } from './ombres'
 
-// Simulation d'éclairage volontairement approximative : une nappe lumineuse circulaire
-// par luminaire, dont le rayon dépend du flux et de la hauteur de la source. Elle ne
-// tient pas compte des murs (le plan n'est qu'une image, sans géométrie exploitable)
-// ni des réflexions. Elle sert à juger l'implantation — « ai-je un coin sombre ? » —
+// Simulation d'éclairage volontairement approximative : une nappe lumineuse par
+// luminaire, dont la portée dépend du flux et de la hauteur de la source, occultée par
+// les murs tracés (polygone de visibilité, voir lib/ombres.ts) — pleine hauteur, sans
+// tenir compte des réflexions. Sert à juger l'implantation — « ai-je un coin sombre ? » —
 // pas à produire un calcul d'éclairement réglementaire.
 
 export interface ParamsLuminaire {
@@ -67,6 +68,8 @@ export interface Nappe {
   x: number
   y: number
   rayonPx: number
+  /** Contour réellement éclairé autour de (x,y), occulté par les murs — polygoneVisibilite. */
+  polygone: Point[]
   couleur: { r: number; v: number; b: number }
   /** Part du flux nominal, sert à atténuer les grandes nappes qui sont plus diffuses. */
   intensite: number
@@ -77,9 +80,12 @@ const PX_PAR_METRE_PAR_DEFAUT = 40
 
 export function nappesLumineuses(
   organes: Organe[],
+  murs: Mur[],
   echelle: Echelle | null,
   hauteurSousPlafondM: number,
 ): Nappe[] {
+  const segments: Segment[] = mursEnSegments(murs)
+
   return organes.filter((o) => estLuminaire(o.type)).map((o) => {
     const defauts = paramsParDefaut(o.type)!
     const flux = o.fluxLm ?? defauts.fluxLm
@@ -96,6 +102,7 @@ export function nappesLumineuses(
       x: o.x,
       y: o.y,
       rayonPx,
+      polygone: polygoneVisibilite({ x: o.x, y: o.y }, segments, rayonPx),
       couleur: kelvinVersRvb(temperature),
       intensite: Math.min(1, flux / 1500),
     }

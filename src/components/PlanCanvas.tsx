@@ -109,9 +109,9 @@ export function PlanCanvas() {
   const nappes = useMemo(
     () =>
       modeEclairage
-        ? nappesLumineuses(organesVisibles, projet.plan.echelle, projet.plan.hauteurSousPlafond)
+        ? nappesLumineuses(organesVisibles, projet.murs, projet.plan.echelle, projet.plan.hauteurSousPlafond)
         : [],
-    [modeEclairage, organesVisibles, projet.plan.echelle, projet.plan.hauteurSousPlafond],
+    [modeEclairage, organesVisibles, projet.murs, projet.plan.echelle, projet.plan.hauteurSousPlafond],
   )
 
   // Mesure le conteneur pour que le Stage occupe tout l'espace disponible.
