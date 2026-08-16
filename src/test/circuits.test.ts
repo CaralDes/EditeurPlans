@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useProjectStore } from '../store/useProjectStore'
+import { resumeCircuits } from '../lib/metre'
+import { construireSchemaTableau } from '../lib/schemaTableau'
 
 function reset() {
   useProjectStore.setState((s) => ({
@@ -77,6 +79,59 @@ describe('création de circuit', () => {
     expect(circuit1.organes).not.toContain(idOrgane)
     expect(circuit2.organes).toContain(idOrgane)
     expect(organes.find((o) => o.id === idOrgane)!.circuitId).toBe(idCircuit2)
+  })
+})
+
+describe('décompte en socles', () => {
+  beforeEach(reset)
+
+  it('une prise double est posée avec 2 postes par défaut', () => {
+    const id = useProjectStore.getState().ajouterOrgane('prise16A-double', 10, 10)
+    const organe = useProjectStore.getState().projet.organes.find((o) => o.id === id)!
+    expect(organe.postes).toBe(2)
+  })
+
+  it('une prise simple reste à 1 poste', () => {
+    const id = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
+    expect(useProjectStore.getState().projet.organes.find((o) => o.id === id)!.postes).toBe(1)
+  })
+
+  it('le remplissage d’un circuit se compte en socles, pas en boîtes', () => {
+    useProjectStore.getState().poserTableau('divisionnaire', 0, 0)
+    // 7 prises doubles = 14 socles, au-delà des 12 admis en 2,5 mm².
+    const ids = Array.from({ length: 7 }, (_, i) =>
+      useProjectStore.getState().ajouterOrgane('prise16A-double', i * 10, 10),
+    )
+    const idCircuit = useProjectStore.getState().creerCircuit(ids)
+
+    const projet = useProjectStore.getState().projet
+    const ligne = resumeCircuits(projet).find((l) => l.circuit.id === idCircuit)!
+    expect(ligne.organesCount).toBe(14)
+    expect(ligne.depasseMax).toBe(true)
+
+    const schema = construireSchemaTableau(projet.tableaux[0]!, projet.circuits, projet.organes)
+    const brancheCircuit = schema.branches.flatMap((b) => b.circuits).find((c) => c.id === idCircuit)!
+    expect(brancheCircuit.nbOrganes).toBe(14)
+    expect(brancheCircuit.alertes.some((a) => a.includes('14 points'))).toBe(true)
+  })
+
+  it('chargerProjet relève à 2 postes les prises doubles d’un projet enregistré avant le décompte en socles', () => {
+    const id = useProjectStore.getState().ajouterOrgane('prise16A-double', 10, 10)
+    const p = useProjectStore.getState().projet
+    // Reproduit l'ancien format : toutes les prises doubles enregistrées avec postes: 1.
+    const ancien = { ...p, organes: p.organes.map((o) => ({ ...o, postes: 1 })) }
+
+    useProjectStore.getState().chargerProjet(ancien)
+    expect(useProjectStore.getState().projet.organes.find((o) => o.id === id)!.postes).toBe(2)
+  })
+
+  it('chargerProjet conserve un réglage explicite au-delà du défaut', () => {
+    const id = useProjectStore.getState().ajouterOrgane('prise16A-double', 10, 10)
+    const p = useProjectStore.getState().projet
+    const avecQuatre = { ...p, organes: p.organes.map((o) => ({ ...o, postes: 4 })) }
+
+    useProjectStore.getState().chargerProjet(avecQuatre)
+    expect(useProjectStore.getState().projet.organes.find((o) => o.id === id)!.postes).toBe(4)
   })
 })
 

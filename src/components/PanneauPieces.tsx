@@ -113,7 +113,7 @@ export function PanneauPieces() {
 
                 <ul className="liste-organes-circuit">
                   <li>
-                    <span>Prises</span>
+                    <span title="Décompte en socles : une prise double compte pour 2">Prises (socles)</span>
                     <span className={conformite.prisesPosees >= conformite.prisesRequises ? 'badge-ok' : 'badge-manque'}>
                       {conformite.prisesPosees} / {conformite.prisesRequises}
                     </span>

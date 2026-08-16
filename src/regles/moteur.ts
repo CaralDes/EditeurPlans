@@ -123,6 +123,25 @@ export const PRISES_TYPES = new Set([
   'prise-commandee',
 ])
 
+/**
+ * Nombre de socles représentés par ces organes. La norme décompte les socles — ce qu'on
+ * peut effectivement brancher — et non les boîtes : une prise double vaut 2, une triple 3.
+ * Le champ `postes` porte cette information ; il vaut 1 pour tout ce qui n'est pas une
+ * prise multiple, si bien que la somme redonne le simple comptage ailleurs.
+ */
+export function nombreSocles(organes: Organe[]): number {
+  return organes.reduce((total, o) => total + Math.max(1, o.postes || 1), 0)
+}
+
+/**
+ * Même décompte, à partir d'identifiants — pour les circuits, qui ne portent que des ids.
+ * Un id introuvable compte pour 1 : une référence non résolue reste au moins un point,
+ * mieux vaut la compter que la perdre silencieusement.
+ */
+export function soclesDesIds(ids: string[], organesParId: Map<string, Organe>): number {
+  return ids.reduce((total, id) => total + Math.max(1, organesParId.get(id)?.postes || 1), 0)
+}
+
 export interface ConformitePiece {
   piece: Piece
   prisesPosees: number
@@ -144,14 +163,15 @@ export interface ConformitePiece {
 export function verifierPiece(piece: Piece, organes: Organe[]): ConformitePiece {
   const regle = parType.get(piece.type)
   const dansPiece = organes.filter((o) => o.pieceId === piece.id)
-  const prisesPosees = dansPiece.filter((o) => PRISES_TYPES.has(o.type)).length
+  // Décompte en socles, pas en boîtes : une prise double compte pour 2 (voir nombreSocles).
+  const prisesPosees = nombreSocles(dansPiece.filter((o) => PRISES_TYPES.has(o.type)))
   const eclairagePose = dansPiece.filter((o) =>
     ['point-lumineux', 'applique', 'spot', 'reglette-led'].includes(o.type),
   ).length
-  const rj45Posees = dansPiece.filter((o) => o.type === 'prise-rj45').length
-  const prisesPlanTravailPosees = dansPiece.filter(
-    (o) => PRISES_TYPES.has(o.type) && o.pose === 'plan-travail',
-  ).length
+  const rj45Posees = nombreSocles(dansPiece.filter((o) => o.type === 'prise-rj45'))
+  const prisesPlanTravailPosees = nombreSocles(
+    dansPiece.filter((o) => PRISES_TYPES.has(o.type) && o.pose === 'plan-travail'),
+  )
 
   // Sans échelle calée, la surface vaut 0 : ce n'est pas « une petite pièce », c'est une
   // surface inconnue. On s'en tient alors au minimum de base, sans appliquer les seuils

@@ -102,7 +102,7 @@ function sectionTableau(projet: Projet): string {
   const tableauElec = projet.tableaux[0]
   if (!tableauElec) return '<section><h2>Tableau</h2><p class="vide">Aucun tableau posé.</p></section>'
 
-  const schema = construireSchemaTableau(tableauElec, projet.circuits)
+  const schema = construireSchemaTableau(tableauElec, projet.circuits, projet.organes)
   const lignesMetre = new Map(resumeCircuits(projet).map((l) => [l.circuit.id, l]))
 
   const lignes: string[][] = []

@@ -134,6 +134,18 @@ function sansOrganesDesCheminements(cheminements: Cheminement[], idsRetires: Set
     .filter((c) => c.organes.length > 0)
 }
 
+// Compatibilité ascendante : avant que le décompte se fasse en socles, tous les organes
+// étaient enregistrés avec postes: 1, y compris les prises doubles — qui valent 2 socles.
+// Seuls les organes restés sous leur valeur par défaut sont relevés : un réglage explicite
+// (une prise réglée à 3 ou 4 postes) est conservé tel quel.
+function migrerPostes(organes: Organe[]): Organe[] {
+  return organes.map((o) => {
+    const defaut = SYMBOL_META[o.type]?.postesDefaut
+    if (defaut === undefined || (o.postes ?? 1) >= defaut) return o
+    return { ...o, postes: defaut }
+  })
+}
+
 export const useProjectStore = create<ProjectState>((set, get) => ({
   projet: projetVide('Extension'),
   selection: [],
@@ -160,7 +172,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   // de l'auto-sauvegarde) : repart d'un historique vierge, pas d'un commit incrémental.
   chargerProjet: (projet) => {
     set({
-      projet: { ...projet, murs: projet.murs ?? [], cheminements: migrerCheminements(projet.cheminements) },
+      projet: {
+        ...projet,
+        murs: projet.murs ?? [],
+        organes: migrerPostes(projet.organes),
+        cheminements: migrerCheminements(projet.cheminements),
+      },
       selection: [],
       outil: { kind: 'select' },
       pointCalibration: null,
@@ -226,7 +243,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       rotation: 0,
       hauteurM: hauteurRecommandee(def.poseDefaut)?.hauteurM ?? 0,
       pose: def.poseDefaut,
-      postes: 1,
+      postes: def.postesDefaut ?? 1,
       ip: null,
       circuitId: null,
       repere: prochainRepere(p.organes, type),

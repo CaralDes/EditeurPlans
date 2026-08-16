@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { circuitDef, circuitsEclairageMin, maxCircuitsParDifferentiel, verifierPiece } from '../regles/moteur'
+import {
+  circuitDef,
+  circuitsEclairageMin,
+  maxCircuitsParDifferentiel,
+  nombreSocles,
+  verifierPiece,
+} from '../regles/moteur'
 import type { Organe, Piece } from '../types'
 
-function organe(type: Organe['type'], pieceId: string, pose: Organe['pose'] = 'basse'): Organe {
+function organe(
+  type: Organe['type'],
+  pieceId: string,
+  pose: Organe['pose'] = 'basse',
+  postes = 1,
+): Organe {
   return {
     id: Math.random().toString(36),
     type,
@@ -12,7 +23,7 @@ function organe(type: Organe['type'], pieceId: string, pose: Organe['pose'] = 'b
     rotation: 0,
     hauteurM: 0,
     pose,
-    postes: 1,
+    postes,
     ip: null,
     circuitId: null,
     repere: 'X-00',
@@ -100,6 +111,49 @@ describe('moteur de règles NF C 15-100', () => {
     expect(def?.sectionMm2).toBe(6)
     expect(def?.calibreA).toBe(32)
     expect(def?.maxOrganes).toBe(1)
+  })
+
+  // La norme décompte les socles — ce qu'on peut brancher — et non les boîtes.
+  it('une prise double compte pour 2 prises dans la pièce', () => {
+    const chambre: Piece = { id: 'P3', nom: 'Chambre', type: 'chambre', polygone: [], surfaceM2: 12 }
+    // 3 prises exigées : 1 simple + 1 double y suffisent (1 + 2 = 3 socles).
+    const organes = [
+      organe('prise16A', 'P3'),
+      organe('prise16A-double', 'P3', 'basse', 2),
+      organe('point-lumineux', 'P3', 'plafond'),
+      organe('prise-rj45', 'P3'), // la chambre en exige 1 : sans lui, ok resterait false
+    ]
+    const conformite = verifierPiece(chambre, organes)
+    expect(conformite.prisesRequises).toBe(3)
+    expect(conformite.prisesPosees).toBe(3)
+    expect(conformite.ok).toBe(true)
+  })
+
+  it('une prise réglée à 3 ou 4 postes compte d’autant', () => {
+    const chambre: Piece = { id: 'P3', nom: 'Chambre', type: 'chambre', polygone: [], surfaceM2: 12 }
+    const conformite = verifierPiece(chambre, [organe('prise16A', 'P3', 'basse', 4)])
+    expect(conformite.prisesPosees).toBe(4)
+  })
+
+  it('le décompte en socles vaut aussi au-dessus du plan de travail', () => {
+    const cuisine: Piece = { id: 'P2', nom: 'Cuisine', type: 'cuisine', polygone: [], surfaceM2: 9 }
+    // 2 doubles au plan de travail = 4 socles, l'exigence des 4 est atteinte.
+    const organes = [
+      organe('prise16A-double', 'P2', 'plan-travail', 2),
+      organe('prise16A-double', 'P2', 'plan-travail', 2),
+      organe('prise16A', 'P2'),
+      organe('prise16A', 'P2'),
+      organe('point-lumineux', 'P2', 'plafond'),
+    ]
+    const conformite = verifierPiece(cuisine, organes)
+    expect(conformite.prisesPlanTravailPosees).toBe(4)
+    expect(conformite.prisesPosees).toBe(6)
+    expect(conformite.ok).toBe(true)
+  })
+
+  it('nombreSocles retombe sur un simple comptage pour ce qui n’a qu’un poste', () => {
+    expect(nombreSocles([])).toBe(0)
+    expect(nombreSocles([organe('point-lumineux', 'P1', 'plafond'), organe('spot', 'P1', 'plafond')])).toBe(2)
   })
 
   it('les prises générales en 2,5 mm² acceptent 12 socles maximum', () => {

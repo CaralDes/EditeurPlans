@@ -1,5 +1,5 @@
 import type { Cheminement, Circuit, Organe, Projet } from '../types'
-import { circuitDef, typeDifferentielRequis } from '../regles/moteur'
+import { circuitDef, soclesDesIds, typeDifferentielRequis } from '../regles/moteur'
 import { longueurCableM } from './cable'
 
 export interface LigneCircuit {
@@ -60,16 +60,19 @@ export function resumeCircuits(projet: Projet): LigneCircuit[] {
       }
     }
 
+    // En socles : une prise double occupe 2 des 12 points d'un circuit 2,5 mm².
+    const soclesDuCircuit = soclesDesIds(circuit.organes, organesParId)
+
     return {
       circuit,
       libelleRegle: def?.libelle ?? null,
-      organesCount: circuit.organes.length,
+      organesCount: soclesDuCircuit,
       cheminements: cheminementsDuCircuit,
       organesNonCables,
       cablesTraces,
       cablesManquants,
       longueurTotaleM,
-      depasseMax: def?.maxOrganes !== undefined && circuit.organes.length > def.maxOrganes,
+      depasseMax: def?.maxOrganes !== undefined && soclesDuCircuit > def.maxOrganes,
       maxOrganes: def?.maxOrganes ?? null,
       typeDifferentiel: circuit.regleId ? typeDifferentielRequis(circuit.regleId) : 'AC',
     }

@@ -101,16 +101,22 @@ export function PanneauProprietes() {
       </label>
 
       {(organe.type === 'prise16A-double' || organe.type === 'prise16A') && (
-        <label className="champ-bloc">
-          Nombre de postes
-          <input
-            type="number"
-            min={1}
-            max={4}
-            value={organe.postes}
-            onChange={(e) => updateOrgane(organe.id, { postes: Number(e.target.value) })}
-          />
-        </label>
+        <>
+          <label className="champ-bloc">
+            Nombre de postes
+            <input
+              type="number"
+              min={1}
+              max={4}
+              value={organe.postes}
+              onChange={(e) => updateOrgane(organe.id, { postes: Number(e.target.value) })}
+            />
+          </label>
+          <p className="panneau-note">
+            La norme compte les socles, pas les boîtes : ce nombre est celui retenu dans la conformité
+            de la pièce et dans le remplissage du circuit.
+          </p>
+        </>
       )}
 
       {estLuminaire(organe.type) &&

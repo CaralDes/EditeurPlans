@@ -81,7 +81,7 @@ export function PanneauCircuits() {
             écart avec la règle NF C 15-100 : calibre ou section modifiés à la main, mauvais
             type de différentiel, ou trop de points sur le circuit — survole-la pour le détail.
           </p>
-          <SchemaTableau schema={construireSchemaTableau(tableau, projet.circuits)} />
+          <SchemaTableau schema={construireSchemaTableau(tableau, projet.circuits, projet.organes)} />
           {eclairageInsuffisant && (
             <p className="panneau-alerte">
               {circuitsEclairagePoses} circuit(s) d'éclairage pour {surfaceHabitable.toFixed(0)} m² habitables,{' '}

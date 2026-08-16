@@ -20,12 +20,17 @@ export interface SymboleMeta {
   label: string
   calque: Calque
   poseDefaut: PoseHauteur
+  /**
+   * Nombre de socles dans une même boîte. La norme décompte les socles, pas les boîtes :
+   * une prise double vaut 2 prises, une triple 3. Absent = 1.
+   */
+  postesDefaut?: number
 }
 
 export const SYMBOL_META: Record<TypeOrgane, SymboleMeta> = {
   // ---- prises ----
   prise16A: { label: 'Prise 16 A', calque: 'prises', poseDefaut: 'basse' },
-  'prise16A-double': { label: 'Prise double', calque: 'prises', poseDefaut: 'basse' },
+  'prise16A-double': { label: 'Prise double', calque: 'prises', poseDefaut: 'basse', postesDefaut: 2 },
   'prise16A-etanche': { label: 'Prise étanche IP44', calque: 'prises', poseDefaut: 'basse' },
   prise32A: { label: 'Prise 32 A (plaque)', calque: 'prises', poseDefaut: 'cuisson' },
   'prise-commandee': { label: 'Prise commandée', calque: 'prises', poseDefaut: 'basse' },

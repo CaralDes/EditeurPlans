@@ -1,5 +1,5 @@
-import type { Circuit, Differentiel, Tableau } from '../types'
-import { circuitDef, maxCircuitsParDifferentiel, typeDifferentielRequis } from '../regles/moteur'
+import type { Circuit, Differentiel, Organe, Tableau } from '../types'
+import { circuitDef, maxCircuitsParDifferentiel, soclesDesIds, typeDifferentielRequis } from '../regles/moteur'
 
 // Regroupe les circuits d'un tableau par différentiel (comme un vrai schéma unifilaire)
 // et signale, pour chacun, les écarts avec la règle NF C 15-100 dont il est issu — calibre
@@ -30,9 +30,16 @@ export interface SchemaTableauData {
   circuitsSansDifferentiel: BrancheCircuit[]
 }
 
-function evaluerCircuit(circuit: Circuit, typeDifferentielParent: Differentiel['type'] | null, orpheline: boolean): BrancheCircuit {
+function evaluerCircuit(
+  circuit: Circuit,
+  typeDifferentielParent: Differentiel['type'] | null,
+  orpheline: boolean,
+  organesParId: Map<string, Organe>,
+): BrancheCircuit {
   const def = circuit.regleId ? circuitDef(circuit.regleId) : undefined
   const alertes: string[] = []
+  // Le maximum de points d'un circuit se compte en socles : une prise double en occupe 2.
+  const nbSocles = soclesDesIds(circuit.organes, organesParId)
 
   if (orpheline) {
     alertes.push('Aucun différentiel valide assigné dans ce tableau')
@@ -43,8 +50,8 @@ function evaluerCircuit(circuit: Circuit, typeDifferentielParent: Differentiel['
     }
   }
 
-  if (def?.maxOrganes !== undefined && circuit.organes.length > def.maxOrganes) {
-    alertes.push(`${circuit.organes.length} points posés, ${def.maxOrganes} maximum recommandé`)
+  if (def?.maxOrganes !== undefined && nbSocles > def.maxOrganes) {
+    alertes.push(`${nbSocles} points posés, ${def.maxOrganes} maximum recommandé`)
   }
   if (def && circuit.calibreA !== def.calibreA) {
     alertes.push(`Disjoncteur ${circuit.calibreA} A posé, ${def.calibreA} A recommandé`)
@@ -58,21 +65,26 @@ function evaluerCircuit(circuit: Circuit, typeDifferentielParent: Differentiel['
     libelle: circuit.libelle,
     calibreA: circuit.calibreA,
     sectionMm2: circuit.sectionMm2,
-    nbOrganes: circuit.organes.length,
+    nbOrganes: nbSocles,
     conforme: alertes.length === 0,
     alertes,
   }
 }
 
-export function construireSchemaTableau(tableau: Tableau, circuits: Circuit[]): SchemaTableauData {
+export function construireSchemaTableau(
+  tableau: Tableau,
+  circuits: Circuit[],
+  organes: Organe[] = [],
+): SchemaTableauData {
   const idsDifferentiels = new Set(tableau.differentiels.map((d) => d.id))
+  const organesParId = new Map(organes.map((o) => [o.id, o]))
 
   const maxCircuits = maxCircuitsParDifferentiel()
 
   const branches: BrancheDifferentiel[] = tableau.differentiels.map((differentiel) => {
     const circuitsDuDdr = circuits
       .filter((c) => c.ddrId === differentiel.id)
-      .map((c) => evaluerCircuit(c, differentiel.type, false))
+      .map((c) => evaluerCircuit(c, differentiel.type, false, organesParId))
     const alertes: string[] = []
     if (circuitsDuDdr.length > maxCircuits) {
       alertes.push(`${circuitsDuDdr.length} circuits sur ce différentiel, ${maxCircuits} maximum`)
@@ -82,7 +94,7 @@ export function construireSchemaTableau(tableau: Tableau, circuits: Circuit[]): 
 
   const circuitsSansDifferentiel = circuits
     .filter((c) => !c.ddrId || !idsDifferentiels.has(c.ddrId))
-    .map((c) => evaluerCircuit(c, null, true))
+    .map((c) => evaluerCircuit(c, null, true, organesParId))
 
   return { tableau, branches, circuitsSansDifferentiel }
 }
