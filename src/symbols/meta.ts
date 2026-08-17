@@ -55,6 +55,7 @@ export const SYMBOL_META: Record<TypeOrgane, SymboleMeta> = {
   'alim-seche-linge': { label: 'Sèche-linge', calque: 'specialises', poseDefaut: 'basse' },
   'alim-four': { label: 'Four', calque: 'specialises', poseDefaut: 'basse' },
   'alim-plaque': { label: 'Plaque de cuisson', calque: 'specialises', poseDefaut: 'cuisson' },
+  'alim-hotte': { label: 'Hotte', calque: 'specialises', poseDefaut: 'hotte' },
   'alim-refrigerateur': { label: 'Réfrigérateur', calque: 'specialises', poseDefaut: 'basse' },
   'alim-congelateur': { label: 'Congélateur', calque: 'specialises', poseDefaut: 'basse' },
   'chauffe-eau': { label: 'Chauffe-eau', calque: 'specialises', poseDefaut: 'haute' },

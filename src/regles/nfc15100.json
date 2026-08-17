@@ -21,6 +21,7 @@
     { "id": "eclairage", "libelle": "Éclairage", "famille": "eclairage", "sectionMm2": 1.5, "calibreA": 16, "maxOrganes": 8, "note": "règle des 300 VA pour spots/bandeaux : 1 point par tranche de 300 VA", "source": "123elec — norme éclairage" },
     { "id": "plaque-cuisson", "libelle": "Plaque de cuisson", "famille": "specialise", "sectionMm2": 6, "calibreA": 32, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
     { "id": "four", "libelle": "Four", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
+    { "id": "hotte", "libelle": "Hotte aspirante", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "note": "puissance réelle souvent 100-400 W (16 A / 1,5 mm² suffirait) ; section retenue par cohérence avec les autres circuits spécialisés cuisine", "source": "Legrand / Schneider Electric / IZI by EDF — circuit dédié cuisine" },
     { "id": "lave-vaisselle", "libelle": "Lave-vaisselle", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
     { "id": "lave-linge", "libelle": "Lave-linge", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },
     { "id": "seche-linge", "libelle": "Sèche-linge", "famille": "specialise", "sectionMm2": 2.5, "calibreA": 20, "maxOrganes": 1, "source": "schema-electrique.net — circuits spécialisés" },

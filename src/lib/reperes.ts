@@ -23,6 +23,7 @@ const PREFIXES: Record<TypeOrgane, string> = {
   'alim-seche-linge': 'SL',
   'alim-four': 'FR',
   'alim-plaque': 'PLQ',
+  'alim-hotte': 'HOT',
   'alim-refrigerateur': 'RF',
   'alim-congelateur': 'CG',
   'chauffe-eau': 'ECS',

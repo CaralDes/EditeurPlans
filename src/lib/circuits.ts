@@ -29,6 +29,7 @@ export const CIRCUIT_SUGGERE: Partial<Record<TypeOrgane, string>> = {
   'alim-seche-linge': 'seche-linge',
   'alim-four': 'four',
   'alim-plaque': 'plaque-cuisson',
+  'alim-hotte': 'hotte',
   'alim-refrigerateur': 'refrigerateur-congelateur',
   'alim-congelateur': 'refrigerateur-congelateur',
   'chauffe-eau': 'chauffe-eau',

@@ -1,4 +1,4 @@
-import type { Projet } from '../types'
+import type { Organe, Projet } from '../types'
 import { SYMBOL_META } from '../symbols/meta'
 import { avertissementRegles, circuitsEclairageMin, versionRegles, verifierToutesPieces } from '../regles/moteur'
 import { resumeCircuits, totauxParSection } from './metre'
@@ -22,6 +22,16 @@ const LIBELLES_TYPE_PIECE: Record<string, string> = {
   garage: 'Garage',
   exterieur: 'Extérieur',
   autre: 'Autre',
+}
+
+const LIBELLES_POSE: Record<string, string> = {
+  basse: 'Basse',
+  'plan-travail': 'Plan de travail',
+  cuisson: 'Cuisson',
+  haute: 'Haute',
+  hotte: 'Hotte',
+  plafond: 'Plafond',
+  commande: 'Commande',
 }
 
 export function echapper(texte: string): string {
@@ -60,6 +70,52 @@ function sectionNomenclature(projet: Projet): string {
     <h2>Nomenclature du matériel</h2>
     ${tableau(['Matériel', 'Quantité'], lignes)}
     <p class="total">${total} appareil(s) au total.</p>
+  </section>`
+}
+
+function formatPose(o: Organe): string {
+  const libelle = LIBELLES_POSE[o.pose] ?? o.pose
+  // Un point sous plafond n'a pas de hauteur d'axe significative (elle dépend de la
+  // hauteur sous plafond, pas d'une cote fixe) : afficher 0,00 m serait trompeur.
+  return o.pose === 'plafond' ? libelle : `${libelle} (${o.hauteurM.toFixed(2)} m)`
+}
+
+function blocAppareils(titre: string, organes: Organe[]): string {
+  if (organes.length === 0) {
+    return `<h3>${echapper(titre)}</h3><p class="vide">Aucun appareil.</p>`
+  }
+  const lignes = [...organes]
+    .sort((a, b) => a.repere.localeCompare(b.repere, 'fr', { numeric: true }))
+    .map((o) => [
+      echapper(o.repere),
+      echapper(SYMBOL_META[o.type]?.label ?? o.type),
+      echapper(formatPose(o)),
+      o.note.trim() ? echapper(o.note) : '—',
+    ])
+  return `<div class="bloc-piece"><h3>${echapper(titre)} <span class="compte">(${organes.length})</span></h3>${tableau(['Repère', 'Appareil', 'Pose', 'Note'], lignes)}</div>`
+}
+
+function sectionAppareilsParPiece(projet: Projet): string {
+  const parPiece = new Map<string, Organe[]>()
+  const horsPiece: Organe[] = []
+  for (const organe of projet.organes) {
+    if (organe.pieceId === null) {
+      horsPiece.push(organe)
+      continue
+    }
+    const liste = parPiece.get(organe.pieceId) ?? []
+    liste.push(organe)
+    parPiece.set(organe.pieceId, liste)
+  }
+
+  const blocs = projet.pieces.map((piece) =>
+    blocAppareils(`${piece.nom} — ${LIBELLES_TYPE_PIECE[piece.type] ?? piece.type}`, parPiece.get(piece.id) ?? []),
+  )
+  if (horsPiece.length > 0) blocs.push(blocAppareils('Hors pièce tracée', horsPiece))
+
+  return `<section class="section-longue">
+    <h2>Appareils par pièce</h2>
+    ${blocs.length > 0 ? blocs.join('') : '<p class="vide">Aucun appareil posé.</p>'}
   </section>`
 }
 
@@ -192,6 +248,10 @@ const STYLE = `
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #46596b;
        border-bottom: 1px solid #d3dbe2; padding-bottom: 4px; margin: 0 0 8px; }
   h3 { font-size: 11.5px; margin: 10px 0 4px; color: #46596b; }
+  .compte { font-weight: 400; color: #64798c; }
+  section.section-longue { page-break-inside: auto; }
+  .bloc-piece { page-break-inside: avoid; margin-bottom: 12px; }
+  .bloc-piece:first-child h3 { margin-top: 0; }
   .soustitre { color: #46596b; margin: 0 0 8px; }
   table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
   th { text-align: left; background: #eef1f4; padding: 4px 6px; border-bottom: 1px solid #d3dbe2; font-size: 9.5px;
@@ -243,6 +303,7 @@ export function construireDossier(projet: Projet, imagePlan: string | null, date
 </section>
 
 ${sectionNomenclature(projet)}
+${sectionAppareilsParPiece(projet)}
 ${sectionPieces(projet)}
 ${sectionTableau(projet)}
 ${sectionMetre(projet)}

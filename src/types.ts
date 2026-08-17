@@ -30,6 +30,7 @@ export type TypeOrgane =
   | 'alim-seche-linge'
   | 'alim-four'
   | 'alim-plaque'
+  | 'alim-hotte'
   | 'alim-refrigerateur'
   | 'alim-congelateur'
   | 'chauffe-eau'

@@ -68,6 +68,20 @@ describe('création de circuit', () => {
     expect(differentiel.type).toBe('A')
   })
 
+  it('suggère 2,5 mm² / 20 A et un différentiel AC pour la hotte (pas de type A imposé)', () => {
+    useProjectStore.getState().poserTableau('divisionnaire', 0, 0)
+    const idOrgane = useProjectStore.getState().ajouterOrgane('alim-hotte', 10, 10)
+    const idCircuit = useProjectStore.getState().creerCircuit([idOrgane])
+
+    const circuit = useProjectStore.getState().projet.circuits.find((c) => c.id === idCircuit)!
+    expect(circuit.sectionMm2).toBe(2.5)
+    expect(circuit.calibreA).toBe(20)
+
+    const tableau = useProjectStore.getState().projet.tableaux[0]!
+    const differentiel = tableau.differentiels.find((d) => d.id === circuit.ddrId)!
+    expect(differentiel.type).toBe('AC')
+  })
+
   it('déplacer un organe vers un nouveau circuit le retire proprement de l’ancien', () => {
     const idOrgane = useProjectStore.getState().ajouterOrgane('prise16A', 10, 10)
     const idCircuit1 = useProjectStore.getState().creerCircuit([idOrgane])

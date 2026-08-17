@@ -174,6 +174,13 @@ const RENDERERS: Record<TypeOrgane, (color: string) => ReactNode> = {
   'alim-seche-linge': (c) => appareilBox(c, 'SL'),
   'alim-four': (c) => appareilBox(c, 'F'),
   'alim-plaque': (c) => appareilBox(c, 'PLQ'),
+  'alim-hotte': (c) => (
+    <>
+      <Line points={[10, 14, 38, 14, 30, 28, 18, 28]} closed stroke={c} strokeWidth={2.1} lineJoin="round" />
+      <Line points={[24, 28, 24, 36]} stroke={c} strokeWidth={2.1} lineCap="round" />
+      <Text x={0} y={37} width={48} align="center" text="HOTTE" fontSize={7} fontStyle="700" fontFamily={M} fill={c} />
+    </>
+  ),
   'alim-refrigerateur': (c) => appareilBox(c, 'RF'),
   'alim-congelateur': (c) => appareilBox(c, 'CG'),
   'chauffe-eau': (c) => (

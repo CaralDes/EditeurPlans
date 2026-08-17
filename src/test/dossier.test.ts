@@ -5,7 +5,13 @@ import type { Organe, Piece, Projet } from '../types'
 
 const DATE = '2026-08-16T10:00:00.000Z'
 
-function organe(id: string, type: Organe['type'], pieceId: string | null, pose: Organe['pose'] = 'basse'): Organe {
+function organe(
+  id: string,
+  type: Organe['type'],
+  pieceId: string | null,
+  pose: Organe['pose'] = 'basse',
+  note = '',
+): Organe {
   return {
     id,
     type,
@@ -19,7 +25,7 @@ function organe(id: string, type: Organe['type'], pieceId: string | null, pose: 
     ip: null,
     circuitId: null,
     repere: id,
-    note: '',
+    note,
   }
 }
 
@@ -75,6 +81,44 @@ describe('construireDossier', () => {
     expect(html).toContain('Nomenclature du matériel')
     expect(html).toContain('Prise 16 A')
     expect(html).toContain('4 appareil(s) au total.')
+  })
+
+  it('liste les appareils de chaque pièce avec leur repère, leur pose et leur note', () => {
+    const projet = {
+      ...projetExemple(),
+      organes: [
+        ...projetExemple().organes,
+        organe('o5', 'alim-hotte', 'P2', 'hotte', 'au-dessus des plaques, à droite'),
+      ],
+    }
+    const html = construireDossier(projet, null, DATE)
+    expect(html).toContain('Appareils par pièce')
+    expect(html).toContain('Séjour — Séjour')
+    expect(html).toContain('Cuisine — Cuisine')
+    expect(html).toContain('>o5<') // repère
+    expect(html).toContain('Hotte')
+    expect(html).toContain('au-dessus des plaques, à droite')
+  })
+
+  it('affiche « — » pour un appareil sans note, plutôt qu’une cellule vide', () => {
+    const html = construireDossier(projetExemple(), null, DATE)
+    // o1 (prise16A, séjour) n'a pas de note dans le jeu d'exemple.
+    expect(html).toContain('>o1<')
+    expect(html.split('>o1<')[1]?.slice(0, 400)).toContain('>—<')
+  })
+
+  it('range les appareils sans pièce sous « Hors pièce tracée »', () => {
+    const projet = { ...projetExemple(), organes: [...projetExemple().organes, organe('o9', 'prise16A', null)] }
+    const html = construireDossier(projet, null, DATE)
+    expect(html).toContain('Hors pièce tracée')
+    expect(html).toContain('>o9<')
+  })
+
+  it('signale une pièce sans aucun appareil plutôt que d’omettre la section', () => {
+    const projet = { ...projetExemple(), pieces: [...projetExemple().pieces, piece('P3', 'Chambre', 'chambre', 12)] }
+    const html = construireDossier(projet, null, DATE)
+    expect(html).toContain('Chambre — Chambre')
+    expect(html.split('Chambre — Chambre')[1]?.slice(0, 200)).toContain('Aucun appareil')
   })
 
   it('reprend la conformité par pièce, y compris les manques', () => {
