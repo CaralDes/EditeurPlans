@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { construireDossier, echapper } from '../lib/dossier'
 import { projetVide } from '../types'
-import type { Organe, Piece, Projet } from '../types'
+import type { Circuit, Organe, Piece, Projet } from '../types'
 
 const DATE = '2026-08-16T10:00:00.000Z'
 
@@ -31,6 +31,18 @@ function organe(
 
 function piece(id: string, nom: string, type: Piece['type'], surfaceM2: number): Piece {
   return { id, nom, type, polygone: [], surfaceM2 }
+}
+
+function circuit(patch: Partial<Circuit> & Pick<Circuit, 'id' | 'libelle'>): Circuit {
+  return {
+    famille: 'prises',
+    regleId: null,
+    sectionMm2: 2.5,
+    calibreA: 20,
+    ddrId: null,
+    organes: [],
+    ...patch,
+  }
 }
 
 function projetExemple(): Projet {
@@ -162,5 +174,53 @@ describe('construireDossier', () => {
     expect(html).toContain('<h1>Vide</h1>')
     expect(html).toContain('Aucune pièce tracée')
     expect(html).toContain('0 appareil(s) au total.')
+  })
+
+  it('n’ajoute aucun plan de câblage par circuit quand l’option n’est pas fournie', () => {
+    const projet = { ...projetExemple(), circuits: [circuit({ id: 'c1', libelle: 'Prises salon' })] }
+    const html = construireDossier(projet, null, DATE)
+    expect(html).not.toContain('<section class="page-circuit">')
+    expect(html).not.toContain('Câblage — Prises salon')
+  })
+
+  it('ajoute une page par circuit fourni, avec sa légende et les repères qu’il dessert', () => {
+    const projet = {
+      ...projetExemple(),
+      circuits: [
+        circuit({ id: 'c1', libelle: 'Prises salon', sectionMm2: 2.5, calibreA: 20, organes: ['o1', 'o2'] }),
+        circuit({ id: 'c2', libelle: 'Éclairage', famille: 'eclairage', sectionMm2: 1.5, calibreA: 16, organes: ['o3'] }),
+      ],
+    }
+    const plans = new Map([
+      ['c1', 'data:image/png;base64,PLAN_C1'],
+      ['c2', 'data:image/png;base64,PLAN_C2'],
+    ])
+    const html = construireDossier(projet, null, DATE, plans)
+
+    expect(html).toContain('Câblage — Prises salon')
+    expect(html).toContain('2.5 mm² · 20 A')
+    expect(html).toContain('dessert o1, o2')
+    expect(html).toContain('data:image/png;base64,PLAN_C1')
+
+    expect(html).toContain('Câblage — Éclairage')
+    expect(html).toContain('1.5 mm² · 16 A')
+    expect(html).toContain('dessert o3')
+    expect(html).toContain('data:image/png;base64,PLAN_C2')
+  })
+
+  it('ne génère une page que pour les circuits présents dans la map fournie', () => {
+    const projet = {
+      ...projetExemple(),
+      circuits: [circuit({ id: 'c1', libelle: 'Avec plan' }), circuit({ id: 'c2', libelle: 'Sans plan' })],
+    }
+    const html = construireDossier(projet, null, DATE, new Map([['c1', 'data:image/png;base64,X']]))
+    expect(html).toContain('Câblage — Avec plan')
+    expect(html).not.toContain('Câblage — Sans plan')
+  })
+
+  it('signale un circuit sans aucun câble tracé plutôt que de lister de faux repères', () => {
+    const projet = { ...projetExemple(), circuits: [circuit({ id: 'c1', libelle: 'Vide', organes: [] })] }
+    const html = construireDossier(projet, null, DATE, new Map([['c1', 'data:image/png;base64,X']]))
+    expect(html).toContain('aucun câble tracé')
   })
 })

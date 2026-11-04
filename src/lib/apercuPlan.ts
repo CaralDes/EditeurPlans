@@ -10,13 +10,10 @@ export function enregistrerStage(stage: Konva.Stage | null): void {
   stageCourant = stage
 }
 
-/**
- * Image PNG (data URI) du plan entier, pas seulement de la portion à l'écran : le zoom et
- * le déplacement en cours sont neutralisés le temps de la capture, puis restaurés — sinon
- * le dossier imprimé ne montrerait que ce que l'utilisateur regardait au moment du clic.
- * Renvoie null s'il n'y a pas de canevas, ou si le navigateur refuse d'exporter le canvas.
- */
-export function capturerPlan(largeurMaxPx = 1600): string | null {
+// Neutralise le zoom et le déplacement en cours le temps d'une capture, pour que l'image
+// montre le plan entier (pas seulement ce que l'utilisateur regardait au moment du clic),
+// puis les restaure — y compris si `fn` lève. Renvoie null s'il n'y a pas de canevas.
+function avecPlanEntier<T>(largeurMaxPx: number, fn: (stage: Konva.Stage) => T): T | null {
   const stage = stageCourant
   if (!stage) return null
 
@@ -37,15 +34,55 @@ export function capturerPlan(largeurMaxPx = 1600): string | null {
         stage.draw()
       }
     }
-    return stage.toDataURL({ pixelRatio: 1 })
-  } catch {
-    // Canvas « taint » (image de fond d'une autre origine) : on préfère un dossier sans
-    // plan à un export qui échoue.
-    return null
+    return fn(stage)
   } finally {
     stage.scale(scaleAvant)
     stage.position(positionAvant)
     stage.size(tailleAvant)
     stage.draw()
   }
+}
+
+/**
+ * Image PNG (data URI) du plan entier. Renvoie null s'il n'y a pas de canevas, ou si le
+ * navigateur refuse d'exporter le canvas (image de fond d'une autre origine, par exemple) —
+ * on préfère alors un dossier sans plan à un export qui échoue.
+ */
+export function capturerPlan(largeurMaxPx = 1600): string | null {
+  return avecPlanEntier(largeurMaxPx, (stage) => {
+    try {
+      return stage.toDataURL({ pixelRatio: 1 })
+    } catch {
+      return null
+    }
+  })
+}
+
+/**
+ * Image PNG (data URI) du plan entier, mais où seuls les câbles du circuit `circuitId`
+ * restent visibles — les symboles, pièces et murs restent affichés pour le repère, les
+ * câbles des autres circuits sont masqués le temps de la capture puis restaurés. Les
+ * cheminements doivent porter `name="cheminement"` et `id={leur id}` dans PlanCanvas pour
+ * être retrouvés ici ; voir le rendu des câbles dans PlanCanvas.tsx.
+ */
+export function capturerCircuit(
+  circuitId: string,
+  cheminements: { id: string; circuitId: string }[],
+  largeurMaxPx = 1600,
+): string | null {
+  return avecPlanEntier(largeurMaxPx, (stage) => {
+    const idsDuCircuit = new Set(cheminements.filter((c) => c.circuitId === circuitId).map((c) => c.id))
+    const noeuds = stage.find('.cheminement')
+    const visibiliteAvant = noeuds.map((n) => n.visible())
+    try {
+      noeuds.forEach((n) => n.visible(idsDuCircuit.has(n.id())))
+      stage.draw()
+      return stage.toDataURL({ pixelRatio: 1 })
+    } catch {
+      return null
+    } finally {
+      noeuds.forEach((n, i) => n.visible(visibiliteAvant[i]!))
+      stage.draw()
+    }
+  })
 }

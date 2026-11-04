@@ -361,6 +361,8 @@ export function PlanCanvas() {
           {projet.cheminements.map((c) => (
             <Line
               key={c.id}
+              id={c.id}
+              name="cheminement"
               points={aplatir(c.points)}
               stroke={COULEUR_ELECTRICITE}
               strokeWidth={2 / vue.scale}

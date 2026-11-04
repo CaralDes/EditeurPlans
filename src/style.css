@@ -298,6 +298,18 @@ textarea {
   align-items: center;
   gap: 10px;
 }
+.champ-case {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.champ-case input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
 .champ-rotation span {
   font-variant-numeric: tabular-nums;
   color: var(--ink);

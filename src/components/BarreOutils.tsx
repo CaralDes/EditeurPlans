@@ -2,12 +2,14 @@ import { useRef, useState } from 'react'
 import { useProjectStore } from '../store/useProjectStore'
 import { FichierProjetInvalide, analyser, declencherTelechargement, lireFichier, nomFichier, serialiser } from '../lib/fichierProjet'
 import { construireDossier, imprimerDossier } from '../lib/dossier'
-import { capturerPlan } from '../lib/apercuPlan'
+import { capturerCircuit, capturerPlan } from '../lib/apercuPlan'
+import { DialogueExportPDF } from './DialogueExportPDF'
 
 export function BarreOutils() {
   const inputRef = useRef<HTMLInputElement>(null)
   const inputProjetRef = useRef<HTMLInputElement>(null)
   const [erreurOuverture, setErreurOuverture] = useState<string | null>(null)
+  const [dialogueExportOuvert, setDialogueExportOuvert] = useState(false)
   const projet = useProjectStore((s) => s.projet)
   const outil = useProjectStore((s) => s.outil)
   const setOutil = useProjectStore((s) => s.setOutil)
@@ -40,7 +42,21 @@ export function BarreOutils() {
   }
 
   function surExporterDossier() {
-    const html = construireDossier(projet, capturerPlan(), new Date().toISOString())
+    setDialogueExportOuvert(true)
+  }
+
+  function surConfirmerExport(inclureCircuits: boolean) {
+    setDialogueExportOuvert(false)
+    const imagePlan = capturerPlan()
+    let plansParCircuit: Map<string, string> | undefined
+    if (inclureCircuits && projet.circuits.length > 0) {
+      plansParCircuit = new Map()
+      for (const circuit of projet.circuits) {
+        const image = capturerCircuit(circuit.id, projet.cheminements)
+        if (image) plansParCircuit.set(circuit.id, image)
+      }
+    }
+    const html = construireDossier(projet, imagePlan, new Date().toISOString(), plansParCircuit)
     if (!imprimerDossier(html)) {
       setErreurOuverture("L'impression a été bloquée par le navigateur — autorise les fenêtres surgissantes.")
     } else {
@@ -67,6 +83,7 @@ export function BarreOutils() {
   }
 
   return (
+    <>
     <div className="barre-outils">
       <div className="barre-groupe">
         <input
@@ -164,5 +181,13 @@ export function BarreOutils() {
         </button>
       </div>
     </div>
+    {dialogueExportOuvert && (
+      <DialogueExportPDF
+        nbCircuits={projet.circuits.length}
+        onAnnuler={() => setDialogueExportOuvert(false)}
+        onConfirmer={surConfirmerExport}
+      />
+    )}
+    </>
   )
 }

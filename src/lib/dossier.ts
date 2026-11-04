@@ -211,6 +211,29 @@ function sectionTableau(projet: Projet): string {
   </section>`
 }
 
+function sectionPlansCircuits(projet: Projet, plansParCircuit: Map<string, string> | undefined): string {
+  if (!plansParCircuit || plansParCircuit.size === 0) return ''
+  const organesParId = new Map(projet.organes.map((o) => [o.id, o]))
+
+  const pages = projet.circuits
+    .filter((c) => plansParCircuit.has(c.id))
+    .map((circuit) => {
+      const image = plansParCircuit.get(circuit.id)!
+      const reperes = circuit.organes
+        .map((id) => organesParId.get(id)?.repere)
+        .filter((r): r is string => Boolean(r))
+        .sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }))
+        .join(', ')
+      return `<section class="page-circuit">
+    <h2>Câblage — ${echapper(circuit.libelle)}</h2>
+    <p class="soustitre">${circuit.sectionMm2} mm² · ${circuit.calibreA} A${reperes ? ` — dessert ${echapper(reperes)}` : ' — aucun câble tracé'}</p>
+    <img class="plan" src="${image}" alt="Câblage du circuit ${echapper(circuit.libelle)}">
+  </section>`
+    })
+
+  return pages.join('\n')
+}
+
 function sectionMetre(projet: Projet): string {
   const totaux = totauxParSection(resumeCircuits(projet))
   const lignesCable = totaux.map((t) => [`${t.sectionMm2} mm²`, `${t.longueurM.toFixed(1)} m`])
@@ -264,10 +287,16 @@ const STYLE = `
   .alertes { margin: 8px 0 0; padding-left: 18px; }
   .plan { width: 100%; border: 1px solid #d3dbe2; page-break-inside: avoid; }
   .plan-vide { color: #64798c; font-style: italic; border: 1px dashed #d3dbe2; padding: 20px; text-align: center; }
+  section.page-circuit { page-break-before: always; }
   footer { margin-top: 18px; border-top: 1px solid #d3dbe2; padding-top: 8px; color: #64798c; font-size: 9.5px; }
 `
 
-export function construireDossier(projet: Projet, imagePlan: string | null, dateISO: string): string {
+export function construireDossier(
+  projet: Projet,
+  imagePlan: string | null,
+  dateISO: string,
+  plansParCircuit?: Map<string, string>,
+): string {
   const date = new Date(dateISO)
   const dateLisible = Number.isNaN(date.getTime())
     ? dateISO
@@ -307,6 +336,7 @@ ${sectionAppareilsParPiece(projet)}
 ${sectionPieces(projet)}
 ${sectionTableau(projet)}
 ${sectionMetre(projet)}
+${sectionPlansCircuits(projet, plansParCircuit)}
 
 <footer>
   Base de règles ${echapper(versionRegles())}. ${echapper(avertissementRegles())}
